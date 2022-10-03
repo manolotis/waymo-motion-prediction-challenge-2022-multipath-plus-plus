@@ -26,6 +26,19 @@ python3 prerender/prerender.py \
     --shard-id 0 \
     --config configs/prerender.yaml
 ```
+
+```
+python3 prerender/prerender.py \
+    --data-path "/home/manolotis/sandbox/waymoMotion/data/reduced/tf_example/training/" \
+    --output-path "/home/manolotis/sandbox/multipathplusplus/data/prerendered/training" \
+    --n-jobs 8 \
+    --n-shards 1 \
+    --shard-id 0 \
+    --config configs/prerender.yaml
+```
+
+
+
 Rendering is a memory consuming procedure so you may want to use ```n-shards > 1``` and running the script a few times using consecutive ```shard-id``` values
 
 Once we have our data prepared we can run the training.

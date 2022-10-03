@@ -40,10 +40,13 @@ config = get_config(sys.argv[1])
 alias = sys.argv[1].split("/")[-1].split(".")[0]
 try:
     models_path = os.path.join("../models", f"{alias}__{get_git_revision_short_hash()}")
-    os.mkdir(tb_path)
     os.mkdir(models_path)
-except:
+except FileExistsError:
     pass
+except Exception as e:
+    print("Could not make path")
+    raise e
+
 last_checkpoint = get_last_file(models_path)
 dataloader = get_dataloader(config["train"]["data_config"])
 val_dataloader = get_dataloader(config["val"]["data_config"])
