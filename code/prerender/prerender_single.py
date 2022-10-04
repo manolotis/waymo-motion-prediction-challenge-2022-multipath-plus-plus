@@ -1,7 +1,7 @@
 import multiprocessing
 from tqdm import tqdm
 import tensorflow as tf
-from utils.prerender_utils import get_visualizers, create_dataset, parse_arguments, merge_and_save
+from utils.prerender_utils import get_renderers, create_dataset, parse_arguments, merge_and_save
 from utils.utils import get_config
 from utils.features_description import generate_features_description
 
@@ -9,7 +9,7 @@ def main():
     args = parse_arguments()
     dataset = create_dataset(args.data_path, args.n_shards, args.shard_id)
     visualizers_config = get_config(args.config)
-    visualizers = get_visualizers(visualizers_config)
+    visualizers = get_renderers(visualizers_config)
 
     k = 0
 
