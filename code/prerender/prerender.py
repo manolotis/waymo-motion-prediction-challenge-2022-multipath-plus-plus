@@ -24,7 +24,7 @@ def main():
                 p.apply_async(
                     merge_and_save,
                     kwds=dict(
-                        visualizers=renderers,
+                        renderers=renderers,
                         data=data,
                         output_path=args.output_path,
                     ),
