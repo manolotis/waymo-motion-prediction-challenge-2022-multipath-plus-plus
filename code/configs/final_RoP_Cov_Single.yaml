@@ -1,4 +1,5 @@
 alias: "single"
+config_name: "final_RoP_Cov_Single"
 
 train:
   data_config:
@@ -10,13 +11,12 @@ train:
       mask_history_fraction: 0.15
     dataloader_config:
       batch_size: 42
-#      batch_size: 10
       shuffle: True
-      num_workers: 6
+      num_workers: 48
   optimizer:
     lr: 0.0001
   n_epochs: 120
-  validate_every_n_steps: 1000
+  validate_every_n_steps: 1000 # ignored for now, it validates after however many steps there are in one epoch
   max_iterations: 5000001
   normalize: True
   normalize_output: True
@@ -32,9 +32,8 @@ val:
       mask_history: False
     dataloader_config:
       batch_size: 42
-#      batch_size: 10
       shuffle: False
-      num_workers: 6
+      num_workers: 48
 
 
 model:

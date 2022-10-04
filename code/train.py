@@ -1,20 +1,16 @@
 import torch
-from torch import nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import numpy as np
 from tqdm import tqdm
-from model.modules import MLP, CGBlock, MCGBlock, HistoryEncoder
 from model.multipathpp import MultiPathPP
 from model.data import get_dataloader, dict_to_cuda, normalize
 from model.losses import pytorch_neg_multi_log_likelihood_batch, nll_with_covariances
-from prerender.utils.utils import data_to_numpy, get_config
 import subprocess
-from matplotlib import pyplot as plt
 import os
 import glob
-import sys
 import random
+from utils.train_utils import parse_arguments, get_config
 
 seed = 0
 torch.manual_seed(seed)
@@ -25,6 +21,7 @@ random.seed(seed)
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 
+
 def get_last_file(path):
     list_of_files = glob.glob(f'{path}/*')
     if len(list_of_files) == 0:
@@ -32,14 +29,18 @@ def get_last_file(path):
     latest_file = max(list_of_files, key=os.path.getctime)
     return latest_file
 
+
 def get_git_revision_short_hash():
     return subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
 
 
-config = get_config(sys.argv[1])
-alias = sys.argv[1].split("/")[-1].split(".")[0]
+args = parse_arguments()
+config = get_config(args)
 try:
-    models_path = os.path.join("../models", f"{alias}__{get_git_revision_short_hash()}")
+    trained_models_path = "../trained_models"
+    if not os.path.exists(trained_models_path):
+        os.mkdir(trained_models_path)
+    models_path = os.path.join(trained_models_path, f"{config['config_name']}__{get_git_revision_short_hash()}")
     os.mkdir(models_path)
 except FileExistsError:
     pass
@@ -72,7 +73,9 @@ train_losses = []
 
 for epoch in tqdm(range(config["train"]["n_epochs"])):
     pbar = tqdm(dataloader)
+
     for data in pbar:
+
         model.train()
         optimizer.zero_grad()
         if config["train"]["normalize"]:
@@ -100,7 +103,8 @@ for epoch in tqdm(range(config["train"]["n_epochs"])):
         else:
             _coordinates = coordinates.detach()
         if num_steps % 10 == 0:
-            pbar.set_description(f"loss = {round(loss.item(), 2)}")
+            pbar.set_description(
+                f"loss = {round(loss.item(), 2)} | epoch = {epoch} | step = {num_steps}")
         if num_steps % 1000 == 0 and this_num_steps > 0:
             saving_data = {
                 "num_steps": num_steps,
@@ -110,7 +114,8 @@ for epoch in tqdm(range(config["train"]["n_epochs"])):
             if config["train"]["scheduler"]:
                 saving_data["scheduler_state_dict"] = scheduler.state_dict()
             torch.save(saving_data, os.path.join(models_path, f"last.pth"))
-        if num_steps % (len(dataloader) // 2) == 0 and this_num_steps > 0:
+        # if num_steps % config["train"]["validate_every_n_steps"] == 0 and this_num_steps > 0:
+        if num_steps % len(dataloader) == 0 and this_num_steps > 0:
             del data
             torch.cuda.empty_cache()
             model.eval()
@@ -138,4 +143,3 @@ for epoch in tqdm(range(config["train"]["n_epochs"])):
         this_num_steps += 1
         if "max_iterations" in config["train"] and num_steps > config["train"]["max_iterations"]:
             break
-

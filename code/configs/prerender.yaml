@@ -3,7 +3,7 @@ output_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prer
 n_jobs: 8
 n_shards: 1
 shard_id: 0
-multiprocessing: False
+multiprocessing: True
 renderers:
   - renderer_name: MultiPathPPRenderer
     renderer_config:

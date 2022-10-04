@@ -11,11 +11,20 @@ def get_config(args):
         config = yaml.load(stream, Loader)
 
     # If provided in command line, override defaults
-    config["data_path"] = config["data_path"] if args.data_path is None else args.data_path
-    config["n_shards"] = config["n_shards"] if args.n_shards is None else args.n_shards
-    config["shard_id"] = config["shard_id"] if args.shard_id is None else args.shard_id
-    config["data_path"] = config["data_path"] if args.data_path is None else args.data_path
-    config["output_path"] = config["output_path"] if args.output_path is None else args.output_path
+
+    keys = [
+        "data_path",
+        "n_shards",
+        "shard_id",
+        "data_path",
+        "output_path",
+    ]
+
+    for key in keys:
+        if key in config:
+            config[key] = config[key] if getattr(args, key) is None else getattr(args, key)
+
+
     return config
 
 
