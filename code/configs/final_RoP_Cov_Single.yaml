@@ -5,10 +5,11 @@ train:
   data_config:
     dataset_config:
       data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/training/"
-      lstm_input_data: ["xy", "yaw", "speed", "width", "length", "valid"]
-      lstm_input_data_diff: ["xy", "yaw", "speed", "valid"]
+      lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
+      lstm_input_data_diff: [ "xy", "yaw", "speed", "valid" ]
       mask_history: False
       mask_history_fraction: 0.15
+      n_shards: 16
     dataloader_config:
       batch_size: 42
       shuffle: True
@@ -27,8 +28,8 @@ val:
   data_config:
     dataset_config:
       data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/validation/"
-      lstm_input_data: ["xy", "yaw", "speed", "width", "length", "valid"]
-      lstm_input_data_diff: ["xy", "yaw", "speed", "valid"]
+      lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
+      lstm_input_data_diff: [ "xy", "yaw", "speed", "valid" ]
       mask_history: False
     dataloader_config:
       batch_size: 42
@@ -43,13 +44,13 @@ model:
   multiple_predictions: False
 
   agent_mcg_linear:
-    layers: [24, 32, 64, 128]
+    layers: [ 24, 32, 64, 128 ]
     pre_activation: False
     pre_batchnorm: False
     batchnorm: False
 
   interaction_mcg_linear:
-    layers: [24, 32, 64, 128]
+    layers: [ 24, 32, 64, 128 ]
     pre_activation: False
     pre_batchnorm: False
     batchnorm: False
@@ -103,7 +104,7 @@ model:
       identity_c_mlp: True
 
   polyline_encoder:
-    layers: [27, 32, 64, 128]
+    layers: [ 27, 32, 64, 128 ]
     pre_activation: False
     pre_batchnorm: False
     batchnorm: False
@@ -160,7 +161,7 @@ model:
     identity_c_mlp: False
 
   agent_and_interaction_linear:
-    layers: [512, 256, 128]
+    layers: [ 512, 256, 128 ]
     pre_activation: True
     pre_batchnorm: False
     batchnorm: False
@@ -189,7 +190,7 @@ model:
         n_blocks: 5
         identity_c_mlp: False
       DECODER:
-        layers: [640, 512, 401]
+        layers: [ 640, 512, 401 ]
         pre_activation: True
         pre_batchnorm: False
         batchnorm: False
@@ -216,7 +217,7 @@ model:
       n_blocks: 5
       identity_c_mlp: False
     DECODER:
-      layers: [640, 512, 401]
+      layers: [ 640, 512, 401 ]
       pre_activation: True
       pre_batchnorm: False
       batchnorm: False

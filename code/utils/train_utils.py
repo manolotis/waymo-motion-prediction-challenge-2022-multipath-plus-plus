@@ -9,6 +9,8 @@ def parse_arguments():
     parser.add_argument("--val-data-path", type=str, required=False, help="Path to prerendered validation data")
     parser.add_argument("--n-jobs", type=int, required=False, help="Dataloader number of workers")
     parser.add_argument("--batch-size", type=int, required=False, help="Dataloader batch size")
+    parser.add_argument("--n-shards", type=int, required=False,
+                        help="n_shards for training data. 1/n_shards will be used")
     parser.add_argument("--config", type=str, required=True, help="Config file path")
     # ToDo: make all config parameters overridable from command line. Remember to update get_config method
 
@@ -34,5 +36,8 @@ def get_config(args):
 
     if args.batch_size is not None:
         config["train"]["data_config"]["dataloader_config"]["batch_size"] = args.batch_size
+
+    if args.n_shards is not None:
+        config["train"]["data_config"]["dataset_config"]["n_shards"] = args.n_shards
 
     return config
