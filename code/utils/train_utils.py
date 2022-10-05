@@ -36,6 +36,7 @@ def get_config(args):
 
     if args.batch_size is not None:
         config["train"]["data_config"]["dataloader_config"]["batch_size"] = args.batch_size
+        config["val"]["data_config"]["dataloader_config"]["batch_size"] = args.batch_size
 
     if args.n_shards is not None:
         config["train"]["data_config"]["dataset_config"]["n_shards"] = args.n_shards
