@@ -4,7 +4,7 @@ config_name: "final_RoP_Cov_Single"
 train:
   data_config:
     dataset_config:
-      data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/validation/"
+      data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/training/"
       lstm_input_data: ["xy", "yaw", "speed", "width", "length", "valid"]
       lstm_input_data_diff: ["xy", "yaw", "speed", "valid"]
       mask_history: False
