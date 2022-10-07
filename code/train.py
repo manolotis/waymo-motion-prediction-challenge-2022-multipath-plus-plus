@@ -1,4 +1,5 @@
 import torch
+torch.multiprocessing.set_sharing_strategy('file_system')
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import numpy as np
