@@ -10,8 +10,8 @@ def angle_to_range(yaw):
     return yaw
 
 
-def normalize(data, config):
-    features = tuple(config["train"]["data_config"]["dataset_config"]["lstm_input_data"])
+def normalize(data, config, split="train"):
+    features = tuple(config[split]["data_config"]["dataset_config"]["lstm_input_data"])
     if features == ("xy", "yaw", "speed", "valid"):
         normalizarion_means = {
             "target/history/lstm_data": np.array(

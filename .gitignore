@@ -12,7 +12,7 @@ data/prerendered/testing_subset/*
 data/prerendered/validation_subset/*
 data/prerendered/*
 data/original/*
-data/prerendered/testing/*
+data/prerendered/test/*
 data/prerendered/validation/*
 tensorboards/*
 models/*
@@ -24,3 +24,4 @@ archive/*
 code/run.sh
 .idea
 trained_models
+predictions

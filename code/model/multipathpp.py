@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from .modules import MCGBlock, HistoryEncoder, MLP, NormalMLP, Decoder, DecoderHandler, EM, MHA
 
+
 class MultiPathPP(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -22,8 +23,8 @@ class MultiPathPP(nn.Module):
             self._em = EM()
         if self._config["mha_decoder"]:
             self._mha_decoder = MHA(config["mha_decoder"])
-    
-    def forward(self, data, num_steps):
+
+    def forward(self, data, num_steps=None):
         target_scatter_numbers = torch.ones(data["batch_size"], dtype=torch.long).cuda()
         target_scatter_idx = torch.arange(data["batch_size"], dtype=torch.long).cuda()
         target_mcg_input_data_linear = self._agent_mcg_linear(data["target/history/mcg_input_data"])
@@ -67,7 +68,7 @@ class MultiPathPP(nn.Module):
             if self._config["make_em"]:
                 probas, coordinates, covariance_matrices, loss_coeff = self._decoder_handler(
                     target_scatter_numbers, target_scatter_idx, final_embedding, data["batch_size"])
-                if num_steps > 1000:
+                if num_steps is not None and num_steps > 1000:
                     probas, coordinates, covariance_matrices = self._em(
                         probas, coordinates, covariance_matrices)
                 return probas, coordinates, covariance_matrices, loss_coeff

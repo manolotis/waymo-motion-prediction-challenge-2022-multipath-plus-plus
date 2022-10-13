@@ -16,7 +16,7 @@ train:
       num_workers: 48
   optimizer:
     lr: 0.0001
-  n_epochs: 1000
+  n_epochs: 120
   validate_every_n_steps: 1000 # ignored for now, it validates after however many steps there are in one epoch
   max_iterations: 5000001
   normalize: True
