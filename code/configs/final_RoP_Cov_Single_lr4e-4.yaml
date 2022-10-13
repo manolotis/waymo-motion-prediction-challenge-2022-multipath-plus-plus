@@ -15,7 +15,7 @@ train:
       shuffle: True
       num_workers: 48
   optimizer:
-    lr: 0.0003
+    lr: 0.0004
   n_epochs: 1000
   validate_every_n_steps: 1000 # ignored for now, it validates after however many steps there are in one epoch
   max_iterations: 5000001
