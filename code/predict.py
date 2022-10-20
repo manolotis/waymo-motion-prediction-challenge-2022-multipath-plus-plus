@@ -1,3 +1,5 @@
+import copy
+
 import torch
 
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -24,7 +26,7 @@ args = parse_arguments()
 config = get_config(args)
 
 
-def get_last_file(path):
+def get_last_checkpoint(path):
     list_of_files = glob.glob(f'{path}/*')
     if len(list_of_files) == 0:
         return None
@@ -32,18 +34,29 @@ def get_last_file(path):
     return latest_file
 
 
+def get_best_checkpoint(path):
+    list_of_files = glob.glob(f'{path}/*')
+    for f in list_of_files:
+        if "best" in f:
+            return f
+    return None
+
+
 try:
     models_path = os.path.join(config["model"]["path"], config["model"]["name"])
-    last_checkpoint = get_last_file(models_path)
+    # checkpoint_path = get_last_checkpoint(models_path)
+    checkpoint_path = get_best_checkpoint(models_path)
     test_dataloader = get_dataloader(config["test"]["data_config"])
     model = MultiPathPP(config["model"])
     model.cuda()
-    if last_checkpoint is not None:
-        model.load_state_dict(torch.load(last_checkpoint)["model_state_dict"])
-        num_steps = torch.load(last_checkpoint)["num_steps"]
+    if checkpoint_path is not None:
+        model.load_state_dict(torch.load(checkpoint_path)["model_state_dict"])
+        num_steps = torch.load(checkpoint_path)["num_steps"]
         model_parameters = filter(lambda p: p.requires_grad, model.parameters())
         params = sum([np.prod(p.size()) for p in model_parameters])
-        print("LOADED ", last_checkpoint, "with N params=", params)
+        print("LOADED ", checkpoint_path, "with N params=", params)
+    else:
+        raise ValueError("Checkpoint was None")
     model.eval()
 
 
@@ -59,14 +72,17 @@ def generate_filename(scene_data, agent_index):
     return f"scid_{scenario_id}__aid_{agent_id}__atype_{agent_type.item()}.npz"
 
 
-savefolder = config["test"]["output_config"]["out_path"]
+savefolder = os.path.join(config["test"]["output_config"]["out_path"], config["model"]["name"])
 
 if not os.path.exists(savefolder):
     os.mkdir(savefolder)
 
 for data in tqdm(test_dataloader):
     if config["test"]["normalize"]:
+        data_original = copy.deepcopy(data)
         data = normalize(data, config, split="test")
+    else:
+        data_original = data
     dict_to_cuda(data)
     probs, coordinates, _, _ = model(data)
     probs = probs.detach().cpu()
@@ -74,21 +90,17 @@ for data in tqdm(test_dataloader):
     coordinates = coordinates * 10. + torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()
     coordinates = coordinates.detach().cpu()
 
-    # print("probs.shape", probs.shape)
-    # print("coordinates.shape", coordinates.shape)
-
     for agent_index, agent_id in enumerate(data["agent_id"]):
         filename = generate_filename(data, agent_index)
         savedata = {
             "scenario_id": data["scenario_id"][agent_index],
             "agent_id": data["agent_id"][agent_index],
-            "agent_type": data["target/agent_type"][agent_index],
+            "agent_type": data["target/agent_type"][agent_index].flatten(),
             "coordinates": coordinates[agent_index],
-            "probabilities": probs[agent_index]
+            "probabilities": probs[agent_index],
+            "target/history/xy": data_original["target/history/xy"][agent_index],
+            "target/future/xy": data_original["target/future/xy"][agent_index],
+            "target/history/valid": data_original["target/history/valid"][agent_index],
+            "target/future/valid": data_original["target/future/valid"][agent_index]
         }
         np.savez_compressed(os.path.join(savefolder, filename), **savedata)
-
-    # print(data.keys())
-    # for key in data.keys():
-    #     print(f"len {key}, {len(data[key])}")
-    # exit()

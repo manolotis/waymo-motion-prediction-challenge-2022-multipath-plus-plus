@@ -18,8 +18,9 @@ test:
 
 
 model:
-  name: "final_RoP_Cov_Single__3e0c744"
-  path: "/home/manolotis/sandbox/multipathplusplus/trained_models/"
+#  name: "final_RoP_Cov_Single_lr4e-4__65c803f"
+  name: "final_RoP_Cov_Single__0f1746c"
+  path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/trained_models/"
   n_trajectories: 6
   size: 640
   make_em: False
