@@ -17,6 +17,7 @@ train:
   optimizer:
     lr: 0.0004
   n_epochs: 1000
+  patience: 100
   validate_every_n_steps: 1000 # ignored for now, it validates after however many steps there are in one epoch
   max_iterations: 5000001
   normalize: True

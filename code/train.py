@@ -88,6 +88,7 @@ model_parameters = filter(lambda p: p.requires_grad, model.parameters())
 params = sum([np.prod(p.size()) for p in model_parameters])
 print("N PARAMS=", params)
 
+epochs_without_improvement = 0
 for epoch in tqdm(range(config["train"]["n_epochs"])):
     pbar = tqdm(dataloader)
     epoch_losses_train = []
@@ -115,7 +116,6 @@ for epoch in tqdm(range(config["train"]["n_epochs"])):
         if "clip_grad_norm" in config["train"]:
             torch.nn.utils.clip_grad_norm_(model.parameters(), config["train"]["clip_grad_norm"])
         optimizer.step()
-
 
         # if config["train"]["normalize_output"]:
         #     _coordinates = coordinates.detach() * 10. + torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()
@@ -178,12 +178,10 @@ for epoch in tqdm(range(config["train"]["n_epochs"])):
                 covariance_matrices) * loss_coeff
             epoch_losses_val.append(loss.item())
 
-
             pbar2.set_description(
                 f"epoch = {epoch} | "
                 f"epoch avg. val loss= {np.mean(epoch_losses_val):.2} | "
                 f"step loss = {round(loss.item(), 2)}")
-
 
     train_losses.append(np.mean(epoch_losses_train))
     val_losses.append(np.mean(epoch_losses_val))
@@ -203,9 +201,14 @@ for epoch in tqdm(range(config["train"]["n_epochs"])):
 
     best_epoch = val_losses[-1] < np.min(val_losses[:-1]) if epoch > 0 else True
 
+    epochs_without_improvement += 1
+
     if best_epoch:
+        epochs_without_improvement = 0
         print("Best validation loss. Saving best model...\n")
         torch.save(saving_data, os.path.join(models_path, f"best.pth"))
 
-    if "max_iterations" in config["train"] and num_steps > config["train"]["max_iterations"]:
+    should_break = ("max_iterations" in config["train"] and num_steps > config["train"][
+        "max_iterations"]) or epochs_without_improvement >= config["train"]["patience"]
+    if should_break:
         break
