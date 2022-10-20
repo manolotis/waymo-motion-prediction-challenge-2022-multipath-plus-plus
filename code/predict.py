@@ -75,7 +75,7 @@ def generate_filename(scene_data, agent_index):
 savefolder = os.path.join(config["test"]["output_config"]["out_path"], config["model"]["name"])
 
 if not os.path.exists(savefolder):
-    os.mkdir(savefolder)
+    os.makedirs(savefolder, exist_ok=True)
 
 for data in tqdm(test_dataloader):
     if config["test"]["normalize"]:
