@@ -173,6 +173,8 @@ def normalize(data, config, split="train"):
         'target/history/mcg_input_data', 'other/history/mcg_input_data',
         'road_network_embeddings']
     for k in keys:
+        if config["test"]["data_config"]["noise_config"]["exclude_road"] and "road" in k:
+            continue
         data[k] = (data[k] - normalizarion_means[k]) / (normalizarion_stds[k] + 1e-6)
         data[k].clamp_(-15, 15)
     data[f"target/history/lstm_data_diff"] *= data[f"target/history/valid_diff"]
@@ -202,9 +204,10 @@ def dict_to_cuda(d):
 
 
 class MultiPathPPDataset(Dataset):
-    def __init__(self, config):
+    def __init__(self, config, noise_config=None):
         self._data_path = config["data_path"]
         self._config = config
+        self._noise_config = noise_config
         files = os.listdir(self._data_path)
         self._files = [os.path.join(self._data_path, f) for f in files]
         self._files = sorted(self._files)
@@ -306,6 +309,13 @@ class MultiPathPPDataset(Dataset):
                 [lstm_input_data, timestamp_ohe], axis=-1)
         return data
 
+    def _remove_road(self, data):
+        for key in data.keys():
+            if "road" in key:
+                # data[key] = np.empty((data[key].shape[0],))
+                data[key] = np.ones_like(data[key]) * -1.0
+        return data
+
     def __getitem__(self, idx):
         try:
             np_data = dict(np.load(self._files[idx], allow_pickle=True))
@@ -326,6 +336,11 @@ class MultiPathPPDataset(Dataset):
         np_data = self._compute_agent_diff_features(np_data)
         np_data = self._compute_lstm_input_data(np_data)
         np_data = self._compute_mcg_input_data(np_data)
+
+        # Empty out anything with roads
+        if self._noise_config["exclude_road"]:
+            np_data = self._remove_road(np_data)
+
         return np_data
 
     @staticmethod
@@ -365,7 +380,7 @@ class MultiPathPPDataset(Dataset):
 
 
 def get_dataloader(config):
-    dataset = MultiPathPPDataset(config["dataset_config"])
+    dataset = MultiPathPPDataset(config["dataset_config"], config["noise_config"])
     dataloader = DataLoader(
         dataset, collate_fn=MultiPathPPDataset.collate_fn, **config["dataloader_config"])
     return dataloader

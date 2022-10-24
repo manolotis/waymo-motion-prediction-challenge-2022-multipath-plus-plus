@@ -1,6 +1,8 @@
 test:
   normalize: True
   data_config:
+    noise:
+      exclude_road: False
     dataset_config:
       data_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/test/"
       lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
