@@ -281,9 +281,18 @@ class MultiPathPPDataset(Dataset):
         return ohe_data
 
     def _mask_history(self, ndarray, fraction):
+        # mask some timesteps with certain probability
         assert fraction >= 0 and fraction < 1
         ndarray = ndarray * (np.random.uniform(size=ndarray.shape) > fraction)
         return ndarray
+
+    def _hide_target_history(self, np_data):
+        # mask all timesteps except the latest one
+        for key in np_data.keys():
+            if "target/history" in key:
+                np_data[key][:, :-1, :] = -1
+        np_data["target/history/valid"][:, :-1, :] = 0
+        return np_data
 
     def _compute_lstm_input_data(self, data):
         keys_to_stack = self._config["lstm_input_data"]
@@ -310,6 +319,7 @@ class MultiPathPPDataset(Dataset):
         return data
 
     def _remove_road(self, data):
+        # mask out all road info
         for key in data.keys():
             if "road" in key:
                 # data[key] = np.empty((data[key].shape[0],))
@@ -333,6 +343,8 @@ class MultiPathPPDataset(Dataset):
             for subject in ["target", "other"]:
                 np_data[f"{subject}/history/valid"] = self._mask_history(
                     np_data[f"{subject}/history/valid"], self._config["mask_history_fraction"])
+        if self._noise_config["hide_target_past"]:
+            np_data = self._hide_target_history(np_data)
         np_data = self._compute_agent_diff_features(np_data)
         np_data = self._compute_lstm_input_data(np_data)
         np_data = self._compute_mcg_input_data(np_data)

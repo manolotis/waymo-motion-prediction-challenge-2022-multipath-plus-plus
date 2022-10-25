@@ -1,3 +1,5 @@
+import sys
+sys.path.append("/home/manolotis/sandbox/robustness_benchmark/")
 import copy
 
 import torch
@@ -10,6 +12,7 @@ import os
 import glob
 import random
 from utils.predict_utils import parse_arguments, get_config
+from waymo_utils.code.utils.misc import print_data_keys
 import numpy as np
 from tqdm import tqdm
 
