@@ -14,5 +14,6 @@ renderers:
       agent_filtering:
         policy: "interesting"
       drop_segments: 4
+      noisy_heading : False
 
 
