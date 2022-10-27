@@ -4,7 +4,7 @@ test:
     noise_config:
       exclude_road: False
       hide_target_past: False
-      noisy_heading: False
+      noisy_heading: True
     dataset_config:
       data_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/test/"
       lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
@@ -22,7 +22,7 @@ test:
 
 
 model:
-#  name: "final_RoP_Cov_Single_lr4e-4__65c803f"
+  #  name: "final_RoP_Cov_Single_lr4e-4__65c803f"
   name: "final_RoP_Cov_Single__0f1746c"
   path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/trained_models/"
   n_trajectories: 6

@@ -6,4 +6,4 @@
   output_config:
     out_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/evaluations/"
   model:
-    name: "final_RoP_Cov_Single_lr4e-4__65c803f_no_road"
+    name: "final_RoP_Cov_Single_lr4e-4__65c803f_no_past"
