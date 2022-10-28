@@ -173,7 +173,7 @@ def normalize(data, config, split="train"):
         'target/history/mcg_input_data', 'other/history/mcg_input_data',
         'road_network_embeddings']
     for k in keys:
-        if config["test"]["data_config"]["noise_config"]["exclude_road"] and "road" in k:
+        if "test" in config and config["test"]["data_config"]["noise_config"]["exclude_road"] and "road" in k:
             continue
         data[k] = (data[k] - normalizarion_means[k]) / (normalizarion_stds[k] + 1e-6)
         data[k].clamp_(-15, 15)
@@ -341,7 +341,11 @@ class MultiPathPPDataset(Dataset):
             np_data = dict(np.load(self._files[0], allow_pickle=True))
         np_data["scenario_id"] = np_data["scenario_id"].item()
         np_data["filename"] = self._files[idx]
-        np_data["target/history/yaw"] = angle_to_range(np_data["target/history/yaw"])
+        try:
+            np_data["target/history/yaw"] = angle_to_range(np_data["target/history/yaw"])
+        except KeyError as e:
+            print("keys: ", np_data.keys())
+            raise e
         np_data["other/history/yaw"] = angle_to_range(np_data["other/history/yaw"])
         np_data = self._generate_sin_cos(np_data)
         np_data = self._add_length_width(np_data)
@@ -363,7 +367,7 @@ class MultiPathPPDataset(Dataset):
 
     @staticmethod
     def collate_fn(batch):
-        batch_keys = batch[0].keys()
+        batch_keys = [k for k in batch[0].keys() if k != "yaw_original"]
         result_dict = {k: [] for k in batch_keys}
         other_agent_history_scatter_idx = []
         road_network_scatter_idx = []
