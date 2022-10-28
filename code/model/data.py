@@ -210,6 +210,12 @@ class MultiPathPPDataset(Dataset):
         self._noise_config = noise_config
         files = os.listdir(self._data_path)
         self._files = [os.path.join(self._data_path, f) for f in files]
+
+        if noise_config is not None and noise_config["noisy_heading"]:
+            files_noisy = os.listdir(noise_config["data_path"])
+            files_noisy = [os.path.join(noise_config["data_path"], f) for f in files_noisy]
+            self._files.extend(files_noisy)
+
         self._files = sorted(self._files)
 
         assert config["n_shards"] > 0

@@ -211,4 +211,5 @@ for epoch in tqdm(range(config["train"]["n_epochs"])):
     should_break = ("max_iterations" in config["train"] and num_steps > config["train"][
         "max_iterations"]) or epochs_without_improvement >= config["train"]["patience"]
     if should_break:
+        print("Reached stop criteria.")
         break
