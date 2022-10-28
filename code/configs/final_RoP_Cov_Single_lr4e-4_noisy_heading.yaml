@@ -1,5 +1,5 @@
 alias: "single"
-config_name: "final_RoP_Cov_Single_lr4e-4"
+config_name: "final_RoP_Cov_Single_lr4e-4_noisy_heading"
 
 train:
   data_config:
@@ -32,6 +32,11 @@ train:
 
 val:
   data_config:
+    noise_config:
+      exclude_road: False
+      hide_target_past: False
+      noisy_heading: True
+      data_path: ""
     dataset_config:
       data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/validation/"
       lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
