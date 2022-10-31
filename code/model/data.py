@@ -369,12 +369,12 @@ class MultiPathPPDataset(Dataset):
             self._noise_config["exclude_road"] = False
             self._noise_config["hide_target_past"] = False
 
-        print("------------")
-        print("Original file: ", file_to_load)
-        print("Path: ", path)
-        print("exclude road?", self._noise_config["exclude_road"])
-        print("hide past??", self._noise_config["hide_target_past"])
-        print("------------")
+        # print("------------")
+        # print("Original file: ", file_to_load)
+        # print("Path: ", path)
+        # print("exclude road?", self._noise_config["exclude_road"])
+        # print("hide past??", self._noise_config["hide_target_past"])
+        # print("------------")
 
         return path
 
