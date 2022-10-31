@@ -127,7 +127,8 @@ for epoch in tqdm(range(config["train"]["n_epochs"])):
                 f"epoch avg. loss = {np.mean(epoch_losses_train):.2} | "
                 f"step loss = {round(loss.item(), 2)} | "
                 f"lr: {optimizer.param_groups[0]['lr']:.3} | "
-                f"step = {num_steps}")
+                f"step = {num_steps} | "
+                f"ewi: {epochs_without_improvement}")
         if num_steps % 1000 == 0 and this_num_steps > 0:
             saving_data = {
                 "epoch": epoch,

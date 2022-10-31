@@ -5,5 +5,5 @@ python /home/manolotis/sandbox/robustness_benchmark/multipathPP/code/predict.py 
   --n-jobs 32 \
   --n-shards 1 \
   --out-path "/home/manolotis/sandbox/robustness_benchmark/multipathPP/predictions/"\
-  --model-name "final_RoP_Cov_Single_lr4e-4__65c803f" \
+  --model-name "final_RoP_Cov_Single__18c3cff" \
   --model-name-addition "noisy_heading"

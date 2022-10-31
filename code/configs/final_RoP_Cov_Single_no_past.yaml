@@ -1,11 +1,11 @@
 alias: "single"
-config_name: "final_RoP_Cov_Single"
+config_name: "final_RoP_Cov_Single_no_past"
 
 train:
   data_config:
     noise_config:
       exclude_road: False
-      hide_target_past: False
+      hide_target_past: True
       noisy_heading: False
       training: True
     dataset_config:
@@ -34,7 +34,7 @@ val:
   data_config:
     noise_config:
       exclude_road: False
-      hide_target_past: False
+      hide_target_past: True
       noisy_heading: False
       training: True
     dataset_config:

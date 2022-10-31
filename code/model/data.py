@@ -208,13 +208,14 @@ class MultiPathPPDataset(Dataset):
         self._data_path = config["data_path"]
         self._config = config
         self._noise_config = noise_config
+        self._training = noise_config["training"]
         files = os.listdir(self._data_path)
         self._files = [os.path.join(self._data_path, f) for f in files]
 
-        if noise_config is not None and noise_config["noisy_heading"]:
-            files_noisy = os.listdir(noise_config["data_path"])
-            files_noisy = [os.path.join(noise_config["data_path"], f) for f in files_noisy]
-            self._files.extend(files_noisy)
+        print("Len files before adding noisy: ", len(self._files))
+        if noise_config is not None:
+            self._add_noisy_files()
+        print("Len files before adding noisy: ", len(self._files))
 
         self._files = sorted(self._files)
 
@@ -235,6 +236,26 @@ class MultiPathPPDataset(Dataset):
 
     def __len__(self):
         return len(self._files)
+
+    def _add_noisy_files(self):
+        if self._noise_config["noisy_heading"]:  # load from pre-rendered folder
+            files_noisy = os.listdir(self._noise_config["data_path"])
+            files_noisy = [os.path.join(self._noise_config["data_path"], f) for f in files_noisy]
+            self._files.extend(files_noisy)
+
+        # Do not add extra files for perturbations below unless we are in training mode
+        if not self._training:
+            return
+
+        if self._noise_config["exclude_road"]:  # (re)load from same folder with flag in path
+            files_noisy = os.listdir(self._data_path)
+            files_noisy = [os.path.join(self._data_path, f + "exclude_road") for f in files_noisy]
+            self._files.extend(files_noisy)
+
+        if self._noise_config["hide_target_past"]:  # (re)load from same folder with flag in path
+            files_noisy = os.listdir(self._data_path)
+            files_noisy = [os.path.join(self._data_path, f + "hide_target_past") for f in files_noisy]
+            self._files.extend(files_noisy)
 
     def _generate_sin_cos(self, data):
         data["target/history/yaw_sin"] = np.sin(data["target/history/yaw"])
@@ -332,20 +353,37 @@ class MultiPathPPDataset(Dataset):
                 data[key] = np.ones_like(data[key]) * -1.0
         return data
 
+    def _prepare_and_get_path(self, idx):
+        file_to_load = self._files[idx]
+        if "exclude_road" in file_to_load:
+            path = file_to_load.replace("exclude_road", "")
+            self._noise_config["exclude_road"] = True
+            self._noise_config["hide_target_past"] = False
+        elif "hide_target_past" in file_to_load:
+            path = file_to_load.replace("hide_target_past", "")
+            self._noise_config["exclude_road"] = False
+            self._noise_config["hide_target_past"] = True
+        else:
+            # load normally
+            path = file_to_load
+            self._noise_config["exclude_road"] = False
+            self._noise_config["hide_target_past"] = False
+
+        print("------------")
+        print("Original file: ", file_to_load)
+        print("Path: ", path)
+        print("exclude road?", self._noise_config["exclude_road"])
+        print("hide past??", self._noise_config["hide_target_past"])
+        print("------------")
+
+        return path
+
     def __getitem__(self, idx):
-        try:
-            np_data = dict(np.load(self._files[idx], allow_pickle=True))
-        except:
-            print("Error reading", self._files[idx])
-            idx = 0
-            np_data = dict(np.load(self._files[0], allow_pickle=True))
+        path = self._prepare_and_get_path(idx)
+        np_data = dict(np.load(path, allow_pickle=True))
         np_data["scenario_id"] = np_data["scenario_id"].item()
         np_data["filename"] = self._files[idx]
-        try:
-            np_data["target/history/yaw"] = angle_to_range(np_data["target/history/yaw"])
-        except KeyError as e:
-            print("keys: ", np_data.keys())
-            raise e
+        np_data["target/history/yaw"] = angle_to_range(np_data["target/history/yaw"])
         np_data["other/history/yaw"] = angle_to_range(np_data["other/history/yaw"])
         np_data = self._generate_sin_cos(np_data)
         np_data = self._add_length_width(np_data)

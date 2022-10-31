@@ -7,6 +7,7 @@ train:
       exclude_road: False
       hide_target_past: False
       noisy_heading: True
+      training: True
     dataset_config:
       data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/training/"
       lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
@@ -35,6 +36,7 @@ val:
       exclude_road: False
       hide_target_past: False
       noisy_heading: True
+      training: True
     dataset_config:
       data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/validation/"
       lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
