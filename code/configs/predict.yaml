@@ -5,6 +5,7 @@ test:
       exclude_road: False
       hide_target_past: False
       noisy_heading: False
+      training: False
     dataset_config:
       data_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/test/"
       lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
