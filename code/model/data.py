@@ -213,7 +213,8 @@ class MultiPathPPDataset(Dataset):
         self._files = [os.path.join(self._data_path, f) for f in files]
 
         print("Len files before adding noisy: ", len(self._files))
-        if noise_config is not None:
+        if noise_config is not None and self._training:
+            # Do not add extra files for perturbations unless we are in training mode
             self._add_noisy_files()
         print("Len files before adding noisy: ", len(self._files))
 
@@ -243,9 +244,6 @@ class MultiPathPPDataset(Dataset):
             files_noisy = [os.path.join(self._noise_config["data_path"], f) for f in files_noisy]
             self._files.extend(files_noisy)
 
-        # Do not add extra files for perturbations below unless we are in training mode
-        if not self._training:
-            return
 
         if self._noise_config["exclude_road"]:  # (re)load from same folder with flag in path
             files_noisy = os.listdir(self._data_path)
