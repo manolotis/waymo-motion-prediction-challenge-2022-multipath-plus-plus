@@ -60,12 +60,13 @@ optimizer = Adam(model.parameters(), **config["train"]["optimizer"])
 if config["train"]["scheduler"]:
     scheduler = ReduceLROnPlateau(optimizer, patience=20, factor=0.5, verbose=True)
 
+last_epoch = 0
 if last_checkpoint_path is not None:
     last_checkpoint = torch.load(last_checkpoint_path)
     model.load_state_dict(last_checkpoint["model_state_dict"])
     optimizer.load_state_dict(last_checkpoint["optimizer_state_dict"])
     num_steps = last_checkpoint["num_steps"]
-    epoch = last_checkpoint["epoch"]
+    last_epoch = last_checkpoint["epoch"]
     train_losses = last_checkpoint["train_losses"]
     val_losses = last_checkpoint["val_losses"]
 
@@ -73,7 +74,7 @@ if last_checkpoint_path is not None:
         scheduler.load_state_dict(last_checkpoint["scheduler_state_dict"])
 
     print("LOADED ", last_checkpoint_path)
-    print("Epoch: ", epoch)
+    print("Epoch: ", last_epoch)
     print("num_steps: ", num_steps)
     print("len(train_losses): ", len(train_losses))
     print("len(val_losses): ", len(val_losses))
@@ -89,7 +90,7 @@ params = sum([np.prod(p.size()) for p in model_parameters])
 print("N PARAMS=", params)
 
 epochs_without_improvement = 0
-for epoch in tqdm(range(config["train"]["n_epochs"])):
+for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
     pbar = tqdm(dataloader)
     epoch_losses_train = []
     epoch_losses_val = []

@@ -1,4 +1,4 @@
-e0cytpython /home/manolotis/sandbox/robustness_benchmark/multipathPP/code/predict.py \
+python /home/manolotis/sandbox/robustness_benchmark/multipathPP/code/predict.py \
   --config /home/manolotis/sandbox/robustness_benchmark/multipathPP/code/configs/predict.yaml \
   --test-data-path "/home/manolotis/datasets/waymo/motion v1.0/prerender/multipathPP/testing" \
   --batch-size 64 \
