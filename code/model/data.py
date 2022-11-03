@@ -216,7 +216,7 @@ class MultiPathPPDataset(Dataset):
         if noise_config is not None and self._training:
             # Do not add extra files for perturbations unless we are in training mode
             self._add_noisy_files()
-        print("Len files before adding noisy: ", len(self._files))
+        print("Len files after adding noisy: ", len(self._files))
 
         self._files = sorted(self._files)
 
@@ -352,6 +352,9 @@ class MultiPathPPDataset(Dataset):
         return data
 
     def _prepare_and_get_path(self, idx):
+        if not self._training:
+            return self._files[idx]
+
         file_to_load = self._files[idx]
         if "exclude_road" in file_to_load:
             path = file_to_load.replace("exclude_road", "")
