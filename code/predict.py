@@ -72,7 +72,7 @@ def generate_filename(scene_data, agent_index):
     scenario_id = scene_data["scenario_id"][agent_index]
     agent_id = scene_data["agent_id"][agent_index]
     agent_type = scene_data["target/agent_type"][agent_index]
-    return f"scid_{scenario_id}__aid_{agent_id}__atype_{agent_type.item()}.npz"
+    return f"scid_{scenario_id}__aid_{agent_id}__atype_{int(agent_type.item())}.npz"
 
 
 model_name = config["model"]["name"]
@@ -106,8 +106,15 @@ for data in tqdm(test_dataloader):
             "coordinates": coordinates[agent_index],
             "probabilities": probs[agent_index],
             "target/history/xy": data_original["target/history/xy"][agent_index],
+            "other/history/xy": data_original["other/history/xy"][agent_index],
             "target/future/xy": data_original["target/future/xy"][agent_index],
+            "other/future/xy": data_original["other/future/xy"][agent_index],
             "target/history/valid": data_original["target/history/valid"][agent_index],
-            "target/future/valid": data_original["target/future/valid"][agent_index]
+            "other/history/valid": data_original["other/history/valid"][agent_index],
+            "target/future/valid": data_original["target/future/valid"][agent_index],
+            "other/future/valid": data_original["other/future/valid"][agent_index]
         }
         np.savez_compressed(os.path.join(savefolder, filename), **savedata)
+        # if savedata["scenario_id"] == '106fb050cdf836af' and savedata["agent_id"] == 1117:
+        #     print("Found it!")
+        #     exit()
