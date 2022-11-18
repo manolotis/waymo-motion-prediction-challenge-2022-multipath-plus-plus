@@ -130,7 +130,8 @@ for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
                 f"lr: {optimizer.param_groups[0]['lr']:.3} | "
                 f"step = {num_steps} | "
                 f"ewi: {epochs_without_improvement}")
-        if num_steps % 1000 == 0 and this_num_steps > 0:
+        # if num_steps % 1000 == 0 and this_num_steps > 0:
+        if (num_steps + 1) % len(dataloader) == 0 and this_num_steps > 0:
             saving_data = {
                 "epoch": epoch,
                 "train_losses": train_losses,
@@ -142,6 +143,7 @@ for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
             if config["train"]["scheduler"]:
                 saving_data["scheduler_state_dict"] = scheduler.state_dict()
             torch.save(saving_data, os.path.join(models_path, f"last.pth"))
+            torch.save(saving_data, os.path.join(models_path, f"e{epoch}_it{num_steps}.pth"))
         # if num_steps % config["train"]["validate_every_n_steps"] == 0 and this_num_steps > 0:
 
         num_steps += 1
