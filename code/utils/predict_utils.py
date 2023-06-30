@@ -1,6 +1,8 @@
+# ToDo: move to waymo_utils repo
 import argparse
 import yaml
 from yaml import Loader
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser()

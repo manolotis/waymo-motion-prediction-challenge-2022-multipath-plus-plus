@@ -1,3 +1,4 @@
+# ToDo: move to waymo_utils repo
 import argparse
 import yaml
 from yaml import Loader
@@ -7,8 +8,10 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--train-data-path", type=str, required=False, help="Path to prerendered training data")
     parser.add_argument("--val-data-path", type=str, required=False, help="Path to prerendered validation data")
-    parser.add_argument("--train-data-path-noisy", type=str, required=False, help="Path to prerendered noisy training data")
-    parser.add_argument("--val-data-path-noisy", type=str, required=False, help="Path to prerendered noisy validation data")
+    parser.add_argument("--train-data-path-noisy", type=str, required=False,
+                        help="Path to prerendered noisy training data")
+    parser.add_argument("--val-data-path-noisy", type=str, required=False,
+                        help="Path to prerendered noisy validation data")
     parser.add_argument("--n-jobs", type=int, required=False, help="Dataloader number of workers")
     parser.add_argument("--batch-size", type=int, required=False, help="Dataloader batch size")
     parser.add_argument("--n-shards", type=int, required=False,

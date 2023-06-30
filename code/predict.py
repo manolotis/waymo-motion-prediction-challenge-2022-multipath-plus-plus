@@ -1,18 +1,13 @@
-import sys
-sys.path.append("/home/manolotis/sandbox/robustness_benchmark/")
 import copy
-
 import torch
 
 torch.multiprocessing.set_sharing_strategy('file_system')
-import subprocess
 from model.multipathpp import MultiPathPP
 from model.data import get_dataloader, dict_to_cuda, normalize
 import os
 import glob
 import random
 from utils.predict_utils import parse_arguments, get_config
-from waymo_utils.code.utils.misc import print_data_keys
 import numpy as np
 from tqdm import tqdm
 
@@ -91,8 +86,9 @@ for data in tqdm(test_dataloader):
     else:
         data_original = data
     dict_to_cuda(data)
-    probs, coordinates, _, _ = model(data)
+    probs, coordinates, covariance_matrices, loss_coeff = model(data)
     probs = probs.detach().cpu()
+    covariance_matrices = covariance_matrices.detach().cpu()
 
     coordinates = coordinates * 10. + torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()
     coordinates = coordinates.detach().cpu()
@@ -112,9 +108,7 @@ for data in tqdm(test_dataloader):
             "target/history/valid": data_original["target/history/valid"][agent_index],
             "other/history/valid": data_original["other/history/valid"][agent_index],
             "target/future/valid": data_original["target/future/valid"][agent_index],
-            "other/future/valid": data_original["other/future/valid"][agent_index]
+            "other/future/valid": data_original["other/future/valid"][agent_index],
+            "covariance_matrix": covariance_matrices[agent_index]
         }
         np.savez_compressed(os.path.join(savefolder, filename), **savedata)
-        # if savedata["scenario_id"] == '106fb050cdf836af' and savedata["agent_id"] == 1117:
-        #     print("Found it!")
-        #     exit()
