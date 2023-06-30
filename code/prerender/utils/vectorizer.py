@@ -81,7 +81,7 @@ class MultiPathPPRenderer(Renderer):
 
     def _select_agents_with_any_validity(self, data):
         return data["state/current/valid"].sum(axis=-1) + \
-               data["state/future/valid"].sum(axis=-1) + data["state/past/valid"].sum(axis=-1)
+            data["state/future/valid"].sum(axis=-1) + data["state/past/valid"].sum(axis=-1)
 
     def _preprocess_data(self, data):
         valid_roadnetwork_selector = data["roadgraph_samples/valid"]

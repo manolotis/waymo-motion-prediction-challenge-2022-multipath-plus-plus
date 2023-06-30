@@ -1,17 +1,13 @@
-python /home/manolotis/sandbox/robustness_benchmark/multipathPP/code/predict.py \
-  --config /home/manolotis/sandbox/robustness_benchmark/multipathPP/code/configs/predict.yaml \
-  --test-data-path "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/test" \
-  --batch-size 8 \
-  --n-jobs 2 \
-  --n-shards 1 \
-  --out-path "/home/manolotis/sandbox/robustness_benchmark/multipathPP/predictions/"\
-  --model-name "final_RoP_Cov_Single__0f1746c"
+BATCH_SIZE=8
+N_JOBS=2
+BASE_SCRIPT="/home/manolotis/sandbox/robustness_benchmark/multipathPP/code/predict.py"
+OUT_PATH="/home/manolotis/sandbox/robustness_benchmark/multipathPP/predictions/"
 
-python /home/manolotis/sandbox/robustness_benchmark/multipathPP/code/predict.py \
+python $BASE_SCRIPT \
   --config /home/manolotis/sandbox/robustness_benchmark/multipathPP/code/configs/predict.yaml \
   --test-data-path "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/test" \
-  --batch-size 8 \
-  --n-jobs 2 \
+  --batch-size $BATCH_SIZE \
+  --n-jobs $N_JOBS \
   --n-shards 1 \
-  --out-path "/home/manolotis/sandbox/robustness_benchmark/multipathPP/predictions/"\
-  --model-name "final_RoP_Cov_Single_lr4e-4__65c803f"
+  --out-path $OUT_PATH \
+  --model-name "final_RoP_Cov_Single__18c3cff"
