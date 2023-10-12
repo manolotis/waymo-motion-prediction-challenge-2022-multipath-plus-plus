@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from matplotlib import pyplot as plt
-from utils.features_description import generate_features_description
+from features_description import generate_features_description
 
 def parse_one_scene(filename):
     dataset = tf.data.TFRecordDataset(filename, compression_type='')
@@ -37,7 +37,7 @@ def plot_scene(scene_data):
                     continue
                 plot_arrowbox(
                     other_position, other_yaw, scene_data["other/length"][i],
-                    scene_data["target/width"], color, alpha=0.5)
+                    scene_data["other/width"][i], color, alpha=0.5)
 
     for timezone, color in [('history', 'red'), ('future', 'green')]:
         for target_position, target_yaw, target_valid in zip(
@@ -50,3 +50,13 @@ def plot_scene(scene_data):
             scene_data["target/width"], color)
             
     plot_roadlines(scene_data["road_network_segments"])
+
+
+if __name__ == "__main__":
+    #testing
+    scene_data = np.load("/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/training/scid_1a1d402a74865f47__aid_2__atype_1.npz")
+    # scene_data = np.load("/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/training/scid_1e9086f93af39801__aid_3816__atype_2.npz")
+    print("scene_data_keys", list(scene_data.keys()))
+    plot_scene(scene_data)
+    plt.show()
+

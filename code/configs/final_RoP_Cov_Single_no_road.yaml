@@ -1,21 +1,29 @@
-alias: "A_fMCG"
+alias: "single"
+config_name: "final_RoP_Cov_Single_no_road"
 
 train:
   data_config:
+    noise_config:
+      exclude_road: True
+      hide_target_past: False
+      noisy_heading: False
+      training: True
     dataset_config:
-      data_path: "/home/stepankonev/w/data/prerendered/training_sparse/"
-      lstm_input_data: ["xy", "yaw", "speed", "width", "length", "valid"]
-      lstm_input_data_diff: ["xy", "yaw", "speed", "valid"]
-      mask_history: True
+      data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/training/"
+      lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
+      lstm_input_data_diff: [ "xy", "yaw", "speed", "valid" ]
+      mask_history: False
       mask_history_fraction: 0.15
+      n_shards: 16
     dataloader_config:
       batch_size: 42
       shuffle: True
-      num_workers: 6
+      num_workers: 48
   optimizer:
     lr: 0.0001
-  n_epochs: 120
-  validate_every_n_steps: 1000
+  n_epochs: 1000
+  patience: 100
+  validate_every_n_steps: 1000 # ignored for now, it validates after however many steps there are in one epoch
   max_iterations: 5000001
   normalize: True
   normalize_output: True
@@ -24,31 +32,37 @@ train:
 
 val:
   data_config:
+    noise_config:
+      exclude_road: True
+      hide_target_past: False
+      noisy_heading: False
+      training: True
     dataset_config:
-      data_path: "/home/stepankonev/w/data/prerendered/validation_sparse/"
-      lstm_input_data: ["xy", "yaw", "speed", "width", "length", "valid"]
-      lstm_input_data_diff: ["xy", "yaw", "speed", "valid"]
+      data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/validation/"
+      lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
+      lstm_input_data_diff: [ "xy", "yaw", "speed", "valid" ]
       mask_history: False
+      n_shards: 1
     dataloader_config:
       batch_size: 42
       shuffle: False
-      num_workers: 6
+      num_workers: 48
 
 
 model:
   n_trajectories: 6
   size: 640
   make_em: False
-  multiple_predictions: True
+  multiple_predictions: False
 
   agent_mcg_linear:
-    layers: [24, 32, 64, 128]
+    layers: [ 24, 32, 64, 128 ]
     pre_activation: False
     pre_batchnorm: False
     batchnorm: False
 
   interaction_mcg_linear:
-    layers: [24, 32, 64, 128]
+    layers: [ 24, 32, 64, 128 ]
     pre_activation: False
     pre_batchnorm: False
     batchnorm: False
@@ -102,7 +116,7 @@ model:
       identity_c_mlp: True
 
   polyline_encoder:
-    layers: [27, 32, 64, 128]
+    layers: [ 27, 32, 64, 128 ]
     pre_activation: False
     pre_batchnorm: False
     batchnorm: False
@@ -159,14 +173,14 @@ model:
     identity_c_mlp: False
 
   agent_and_interaction_linear:
-    layers: [512, 256, 128]
+    layers: [ 512, 256, 128 ]
     pre_activation: True
     pre_batchnorm: False
     batchnorm: False
 
   decoder_handler_config:
-    n_decoders: 5
-    return_embedding: True
+    n_decoders: 1
+    return_embedding: False
     decoder_config:
       trainable_cov: True
       size: 640
@@ -188,7 +202,7 @@ model:
         n_blocks: 5
         identity_c_mlp: False
       DECODER:
-        layers: [640, 512, 401]
+        layers: [ 640, 512, 401 ]
         pre_activation: True
         pre_batchnorm: False
         batchnorm: False
@@ -215,7 +229,7 @@ model:
       n_blocks: 5
       identity_c_mlp: False
     DECODER:
-      layers: [640, 512, 401]
+      layers: [ 640, 512, 401 ]
       pre_activation: True
       pre_batchnorm: False
       batchnorm: False

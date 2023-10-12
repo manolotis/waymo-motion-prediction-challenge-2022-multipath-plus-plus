@@ -22,7 +22,7 @@ class MLP(nn.Module):
         self._mlp = nn.Sequential(*modules)
         self.n_in = config["n_in"]
         self.n_out = config["n_out"]
-    
+
     def forward(self, x):
         output = self._mlp(x)
         return output
@@ -58,7 +58,7 @@ class NormalMLP(nn.Module):
         return x
         output = self._mlp(x)
         return output
-            
+
 
 class CGBlock(nn.Module):
     def __init__(self, config):
@@ -82,7 +82,7 @@ class CGBlock(nn.Module):
             raise Exception("Unknown agg mode for MCG")
         return s, aggregated_c
 
-    
+
 class MCGBlock(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -99,7 +99,7 @@ class MCGBlock(nn.Module):
         self._blocks = nn.ModuleList(self._blocks)
         self.n_in = self._blocks[0].n_in
         self.n_out = self._blocks[-1].n_out
-    
+
     def _repeat_tensor(self, tensor, scatter_numbers, axis=0):
         result = []
         for i in range(len(scatter_numbers)):
@@ -135,7 +135,7 @@ class MCGBlock(nn.Module):
             assert torch.isfinite(running_mean_s).all()
             assert torch.isfinite(running_mean_c).all()
         if return_s:
-            return running_mean_s 
+            return running_mean_s
         if aggregate_batch:
             return scatter_max(running_mean_c, scatter_idx, dim=0)[0]
         return running_mean_c
@@ -157,7 +157,7 @@ class Decoder(nn.Module):
         self._mcg_predictor = MCGBlock(config["mcg_predictor"])
         if not self._return_embedding:
             self._mlp_decoder = NormalMLP(config["DECODER"])
-    
+
     def forward(self, target_scatter_numbers, target_scatter_idx, final_embedding, batch_size):
         # assert torch.isfinite(self._learned_anchor_embeddings).all()
         assert torch.isfinite(final_embedding).all()
@@ -205,7 +205,7 @@ class DecoderHandler(nn.Module):
         self._n_decoders = int(config["n_decoders"])
         self._decoders = nn.ModuleList([
             Decoder(config["decoder_config"]) for _ in range(self._n_decoders)])
-    
+
     def forward(self, target_scatter_numbers, target_scatter_idx, final_embedding, batch_size):
         stacked_probas, stacked_coordinates, stacked_covariance_matrices = [], [], []
         stacked_embeddings = []
@@ -237,7 +237,7 @@ class DecoderHandler(nn.Module):
                 torch.cat(x, dim=1) for x in [
                     stacked_probas, stacked_coordinates, stacked_covariance_matrices]]
             return (stacked_probas, stacked_coordinates, stacked_covariance_matrices,
-                max(self._n_decoders / random_head_selector.sum(), 1))
+                    max(self._n_decoders / random_head_selector.sum(), 1))
 
 
 class EM(nn.Module):
@@ -245,7 +245,7 @@ class EM(nn.Module):
         super().__init__()
         self._selector = torch.LongTensor([29, 49, 79])
         self._n_final_trajs = 6
-    
+
     @torch.no_grad()
     def _compute_initial_state(self, probas, trajectories):
         result_idx = torch.zeros((trajectories.shape[0], self._n_final_trajs), dtype=torch.long).cuda()
@@ -265,13 +265,13 @@ class EM(nn.Module):
             worked = worked * (1 - adj_matrix[torch.arange(worked.shape[0]), amax])
             result_idx[:, i] = amax
         return result_idx
-    
+
     @torch.no_grad()
     def _compute_coefficients(self, _covariance_matrices6, trajectories, trajectories6, probas6):
-        covariance_matrices6 = _covariance_matrices6# * 500.0
+        covariance_matrices6 = _covariance_matrices6  # * 500.0
         precision_matrices6 = torch.inverse(covariance_matrices6)
         diff = trajectories6[:, :, self._selector, :].unsqueeze(2) - \
-            trajectories[:, :, self._selector, :].unsqueeze(1)
+               trajectories[:, :, self._selector, :].unsqueeze(1)
         A = diff.unsqueeze(-2)
         B = diff.unsqueeze(-1)
         C = precision_matrices6[:, :, self._selector, :, :].unsqueeze(2)
@@ -279,11 +279,12 @@ class EM(nn.Module):
         logdetCovM = torch.logdet(covariance_matrices6[:, :, self._selector, :, :].unsqueeze(2))
         assert torch.isfinite(logdetCovM).all()
         pMatrix = torch.exp((
-            -np.log(2 * np.pi) - 0.5 * logdetCovM - 0.5 * qform).sum(dim=-1)) + 1e-8
+                                    -np.log(2 * np.pi) - 0.5 * logdetCovM - 0.5 * qform).sum(dim=-1)) + 1e-8
         pMatrix = (pMatrix * probas6.unsqueeze(2)) / ((
-            pMatrix * probas6.unsqueeze(2)).sum(dim=1, keepdims=True) + 1e-8)
+                                                              pMatrix * probas6.unsqueeze(2)).sum(dim=1,
+                                                                                                  keepdims=True) + 1e-8)
         return pMatrix
-    
+
     def forward(self, non_normalized_probas, trajectories, covariance_matrices):
         probas = nn.functional.softmax(non_normalized_probas, dim=-1)
         result_idx = self._compute_initial_state(probas, trajectories)
@@ -302,11 +303,11 @@ class EM(nn.Module):
             P = probas.unsqueeze(1) * pMatrix
             probas6 = (P).sum(dim=-1)
             trajectories6 = ((P)[..., None, None] * \
-                trajectories.unsqueeze(1)).sum(axis=2) / probas6[..., None, None]
+                             trajectories.unsqueeze(1)).sum(axis=2) / probas6[..., None, None]
             diff = trajectories6.unsqueeze(2) - trajectories.unsqueeze(1)
             covariance_matrices6 = ((P)[..., None, None, None] * \
-                (covariance_matrices.unsqueeze(1) + (diff.unsqueeze(-1) @ diff.unsqueeze(-2)))
-                ).sum(axis=2)
+                                    (covariance_matrices.unsqueeze(1) + (diff.unsqueeze(-1) @ diff.unsqueeze(-2)))
+                                    ).sum(axis=2)
             covariance_matrices6 = covariance_matrices6 / probas6[..., None, None, None]
             with torch.no_grad():
                 assert torch.isfinite(torch.logdet(covariance_matrices6)).all()
@@ -333,14 +334,14 @@ class HistoryEncoder(nn.Module):
 class MHA(nn.Module):
     def __init__(self, config):
         super().__init__()
-        n_in = 640 #config["n_in"]
-        n_out = 640 #config["n_out"]
+        n_in = 640  # config["n_in"]
+        n_out = 640  # config["n_out"]
         self._config = config
         self._q = nn.Linear(n_in, n_out)
         self._k = nn.Linear(n_in, n_out)
         self._v = nn.Linear(n_in, n_out)
         self._mha = nn.MultiheadAttention(n_out, 4, batch_first=True)
-    
+
     def forward(self, traj_embeddings):
         batch_size = traj_embeddings.shape[0]
         target_scatter_numbers = torch.ones(batch_size, dtype=torch.long).cuda()

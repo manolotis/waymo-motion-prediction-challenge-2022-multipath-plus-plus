@@ -25,13 +25,13 @@ class SegmentFilteringPolicy:
         distances = np.linalg.norm(segments, axis=-1).min(axis=-1)
         closest_segments_selector = distances < self._config["segments_filtering_radius"]
         return segments[closest_segments_selector], types[closest_segments_selector].flatten()
-    
+
     def filter(self, segments, types):
         if self._config["policy"] == "n_closest_segments":
             return self._select_n_closest_segments(segments, types)
         if self._config["policy"] == "within_radius":
             return self._select_segments_within_radius(segments, types)
-        raise Exception(f"Unknown segment filtering policy {self._config['policy'] }")
+        raise Exception(f"Unknown segment filtering policy {self._config['policy']}")
 
 
 class TargetAgentFilteringPolicy:
@@ -40,7 +40,7 @@ class TargetAgentFilteringPolicy:
 
     def _get_only_interesting_agents(self, data, i):
         return data["state/tracks_to_predict"][i] > 0
-    
+
     def _get_only_fully_available_agents(self, data, i):
         full_validity = np.concatenate([
             data["state/past/valid"], data["state/current/valid"], data["state/future/valid"]],
@@ -49,17 +49,17 @@ class TargetAgentFilteringPolicy:
         n_valid_timestamps = full_validity.sum(axis=-1)
         return n_valid_timestamps[i] == n_timestamps
         # return np.ones_like(n_valid_timestamps) * (n_valid_timestamps == n_timestamps)
-    
+
     def _get_interesting_and_fully_available_agents(self, data, i):
         interesting = self._get_only_interesting_agents(data, i)
         fully_valid = self._get_only_fully_available_agents(data, i)
         return interesting and fully_valid
-    
+
     def _get_fully_available_agents_without_interesting(self, data, i):
         interesting = self._get_only_interesting_agents(data, i)
         fully_valid = self._get_only_fully_available_agents(data, i)
         return fully_valid and not interesting
-    
+
     def allow(self, data, i):
         if self._config["policy"] == "interesting":
             return self._get_only_interesting_agents(data, i)
@@ -69,7 +69,8 @@ class TargetAgentFilteringPolicy:
             return self._get_interesting_and_fully_available_agents(data, i)
         if self._config["policy"] == "fully_available_agents_without_interesting":
             return self._get_fully_available_agents_without_interesting(data, i)
-        raise Exception(f"Unknown agent filtering policy {self._config['policy'] }")
+        raise Exception(f"Unknown agent filtering policy {self._config['policy']}")
+
 
 class MultiPathPPRenderer(Renderer):
     def __init__(self, config):
@@ -77,11 +78,11 @@ class MultiPathPPRenderer(Renderer):
         self.n_segment_types = 20
         self._segment_filter = SegmentFilteringPolicy(self._config["segment_filtering"])
         self._target_agent_filter = TargetAgentFilteringPolicy(self._config["agent_filtering"])
-    
+
     def _select_agents_with_any_validity(self, data):
         return data["state/current/valid"].sum(axis=-1) + \
             data["state/future/valid"].sum(axis=-1) + data["state/past/valid"].sum(axis=-1)
-    
+
     def _preprocess_data(self, data):
         valid_roadnetwork_selector = data["roadgraph_samples/valid"]
         for key in get_filter_valid_roadnetwork_keys():
@@ -124,13 +125,13 @@ class MultiPathPPRenderer(Renderer):
         return {
             "segments": result,
             "segment_types": np.array(segment_types)}
-    
+
     def _split_past_and_future(self, data, key):
         history = np.concatenate(
             [data[f"state/past/{key}"], data[f"state/current/{key}"]], axis=1)[..., None]
         future = data[f"state/future/{key}"][..., None]
         return history, future
-    
+
     def _prepare_agent_history(self, data):
         # (n_agents, 11, 2)
         preprocessed_data = {}
@@ -146,11 +147,11 @@ class MultiPathPPRenderer(Renderer):
             preprocessed_data[f"history/{key}"], preprocessed_data[f"future/{key}"] = \
                 self._split_past_and_future(data, key)
         for key in ["state/id", "state/is_sdc", "state/type", "state/current/width",
-                "state/current/length"]:
+                    "state/current/length"]:
             preprocessed_data[key.split('/')[-1]] = data[key]
         preprocessed_data["scenario_id"] = data["scenario/id"]
         return preprocessed_data
-    
+
     def _transfrom_to_agent_coordinate_system(self, coordinates, shift, yaw):
         # coordinates
         # dim 0: number of agents / number of segments for road network
@@ -169,7 +170,7 @@ class MultiPathPPRenderer(Renderer):
         assert len(segments) == len(types), \
             f"n_segments={len(segments)} must match len_types={len(types)}"
         return self._segment_filter.filter(segments, types)
-    
+
     def _compute_closest_point_of_segment(self, segments):
         # This method works only with road segments in agent-related coordinate system
         assert len(segments.shape) == 3
@@ -180,7 +181,7 @@ class MultiPathPPRenderer(Renderer):
         clipped_t = np.clip(t, 0, 1)[:, None]
         closest_points = A + clipped_t * M
         return closest_points
-    
+
     def _generate_segment_embeddings(self, segments, types):
         # This method works only with road segments in agent-related coordinate system
         # previously filtered
@@ -198,15 +199,15 @@ class MultiPathPPRenderer(Renderer):
             r_norm, r_unit_vector, segment_unit_vector, segment_end_minus_start_norm,
             segment_end_minus_r_norm, segment_type_ohe], axis=-1)
         return resulting_embeddings[:, None, :]
-    
+
     def _normalize_tensor(self, tensor, mean, std):
         if not self._config["normalize"]:
             return tensor
         raise Exception("Normalizing here is really not what you want. Please use normalization from model.data")
         return (tensor - mean) / (std + 1e-6)
-    
+
     def _normalize(self, tensor, i, key):
-        target_data = tensor[i][None, ]
+        target_data = tensor[i][None,]
         other_data = np.delete(tensor, i, axis=0)
         if not self._config["normalize"]:
             return target_data, other_data
@@ -224,11 +225,11 @@ class MultiPathPPRenderer(Renderer):
         future_speed = np.concatenate(
             [data["target/history/speed"][0, -1:, 0], data["target/future/speed"][0, :, 0]])
 
-        kMaxSpeedForStationary = 2.0                 # (m/s)
-        kMaxDisplacementForStationary = 5.0          # (m)
-        kMaxLateralDisplacementForStraight = 5.0     # (m)
+        kMaxSpeedForStationary = 2.0  # (m/s)
+        kMaxDisplacementForStationary = 5.0  # (m)
+        kMaxLateralDisplacementForStraight = 5.0  # (m)
         kMinLongitudinalDisplacementForUTurn = -5.0  # (m)
-        kMaxAbsHeadingDiffForStraight = np.pi / 6.0   # (rad)
+        kMaxAbsHeadingDiffForStraight = np.pi / 6.0  # (rad)
         first_valid_index, last_valid_index = 0, None
         for i in range(1, len(valid)):
             if valid[i] == 1:
@@ -264,7 +265,11 @@ class MultiPathPPRenderer(Renderer):
             if not self._target_agent_filter.allow(data, i):
                 continue
             current_agent_scene_shift = agent_history_info["history/xy"][i][-1]
-            current_agent_scene_yaw = agent_history_info["history/bbox_yaw"][i][-1]
+
+            if self._config["noisy_heading"]:
+                agent_history_info["history/bbox_yaw"][i][-1] += np.pi / 2
+
+            current_agent_scene_yaw = np.copy(agent_history_info["history/bbox_yaw"][i][-1])
             current_scene_road_network_coordinates = self._transfrom_to_agent_coordinate_system(
                 road_network_info["segments"], current_agent_scene_shift, current_agent_scene_yaw)
             current_scene_road_network_coordinates, current_scene_road_network_types = \
@@ -285,13 +290,13 @@ class MultiPathPPRenderer(Renderer):
             current_scene_agents_yaws_future = \
                 agent_history_info["future/bbox_yaw"] - current_agent_scene_yaw
             (current_scene_target_agent_coordinates_history,
-            current_scene_other_agents_coordinates_history) = self._normalize(
+             current_scene_other_agents_coordinates_history) = self._normalize(
                 current_scene_agents_coordinates_history, i, "xy")
             current_scene_target_agent_yaws_history, current_scene_other_agents_yaws_history = \
                 self._normalize(current_scene_agents_yaws_history, i, "yaw")
             current_scene_target_agent_speed_history, current_scene_other_agents_speed_history = \
                 self._normalize(agent_history_info["history/speed"], i, "speed")
-            
+
             scene_data = {
                 "shift": current_agent_scene_shift[None,],
                 "yaw": current_agent_scene_yaw,
@@ -329,10 +334,7 @@ class MultiPathPPRenderer(Renderer):
                 "road_network_segments": current_scene_road_network_coordinates
             }
             scene_data["trajectory_bucket"] = self._get_trajectory_class(scene_data)
+            if self._config["noisy_heading"]:
+                scene_data["yaw_original"] = current_agent_scene_yaw - np.pi / 2
             array_of_scene_data_dicts.append(scene_data)
         return array_of_scene_data_dicts
-
-
-
-
-

@@ -1,55 +1,31 @@
-alias: "single"
-config_name: "final_RoP_Cov_Single"
-
-train:
-  data_config:
-    noise_config:
-      exclude_road: False
-      hide_target_past: False
-      noisy_heading: False
-      training: True
-    dataset_config:
-      data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/training/"
-      lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
-      lstm_input_data_diff: [ "xy", "yaw", "speed", "valid" ]
-      mask_history: False
-      mask_history_fraction: 0.15
-      n_shards: 16
-    dataloader_config:
-      batch_size: 42
-      shuffle: True
-      num_workers: 48
-  optimizer:
-    lr: 0.0001
-  n_epochs: 1000
-  patience: 100
-  validate_every_n_steps: 1000 # ignored for now, it validates after however many steps there are in one epoch
-  max_iterations: 5000001
+test:
   normalize: True
-  normalize_output: True
-  clip_grad_norm: 0.4
-  scheduler: True
-
-val:
   data_config:
     noise_config:
       exclude_road: False
       hide_target_past: False
-      noisy_heading: False
-      training: True
+      noisy_heading: True
+      training: False
     dataset_config:
-      data_path: "/home/manolotis/sandbox/multipathplusplus/data/prerendered/validation/"
+      data_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/test/"
       lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
       lstm_input_data_diff: [ "xy", "yaw", "speed", "valid" ]
       mask_history: False
       n_shards: 1
     dataloader_config:
-      batch_size: 42
+      batch_size: 8
       shuffle: False
-      num_workers: 48
+      num_workers: 8
+  output_config:
+    visualize: False
+    out_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/predictions/"
+    viz_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/plots/predictions/"
 
 
 model:
+  #  name: "final_RoP_Cov_Single_lr4e-4__65c803f"
+  name: "final_RoP_Cov_Single__0f1746c"
+  path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/trained_models/"
   n_trajectories: 6
   size: 640
   make_em: False
