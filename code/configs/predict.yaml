@@ -7,7 +7,7 @@ test:
       noisy_heading: False
       training: False
     dataset_config:
-      data_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/test/"
+      data_path: "/home/manolotis/sandbox/scenario_based_evaluation/multipathPP/data/prerendered/testing/"
       lstm_input_data: [ "xy", "yaw", "speed", "width", "length", "valid" ]
       lstm_input_data_diff: [ "xy", "yaw", "speed", "valid" ]
       mask_history: False
@@ -18,14 +18,14 @@ test:
       num_workers: 8
   output_config:
     visualize: False
-    out_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/predictions/"
-    viz_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/plots/predictions/"
+    out_path: "/home/manolotis/sandbox/scenario_based_evaluation/multipathPP/predictions/"
+    viz_path: "/home/manolotis/sandbox/scenario_based_evaluation/multipathPP/plots/predictions/"
 
 
 model:
 #  name: "final_RoP_Cov_Single_lr4e-4__65c803f"
   name: "final_RoP_Cov_Single__0f1746c"
-  path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/trained_models/"
+  path: "/home/manolotis/sandbox/scenario_based_evaluation/multipathPP/trained_models/"
   n_trajectories: 6
   size: 640
   make_em: False

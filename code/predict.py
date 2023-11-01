@@ -80,11 +80,31 @@ if not os.path.exists(savefolder):
     os.makedirs(savefolder, exist_ok=True)
 
 for data in tqdm(test_dataloader):
+    # for key in data.keys():
+    #     print(key, type(data[key]))
+    #     try:
+    #         print("\t", data[key][0].shape)
+    #     except TypeError:
+    #         print("\t", data[key])
+    #     except AttributeError:
+    #         print("\t", data[key])
+
     if config["test"]["normalize"]:
         data_original = copy.deepcopy(data)
         data = normalize(data, config, split="test")
     else:
         data_original = data
+
+    # print("AFTER NORM")
+    # for key in data.keys():
+    #     print(key, type(data[key]))
+    #     try:
+    #         print("\t", data[key][0].shape)
+    #     except TypeError:
+    #         print("\t", data[key])
+    #     except AttributeError:
+    #         print("\t", data[key])
+
     dict_to_cuda(data)
     probs, coordinates, covariance_matrices, loss_coeff = model(data)
     probs = probs.detach().cpu()

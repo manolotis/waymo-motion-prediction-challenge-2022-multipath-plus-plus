@@ -3,8 +3,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-predictions_path = "/home/manolotis/sandbox/robustness_benchmark/multipathPP/predictions/"
-data_path = "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/test/"
+predictions_path = "/home/manolotis/sandbox/scenario_based_evaluation/multipathPP/predictions/final_RoP_Cov_Single__18c3cff/"
+data_path = "/home/manolotis/sandbox/scenario_based_evaluation/multipathPP/data/prerendered/testing/"
 MAX = 10
 
 prediction_files = [os.path.join(predictions_path, file) for file in os.listdir(predictions_path)]

@@ -11,6 +11,7 @@ def angle_to_range(yaw):
 
 
 def normalize(data, config, split="train"):
+    # print("!!!!! NORMALIZE")
     features = tuple(config[split]["data_config"]["dataset_config"]["lstm_input_data"])
     if features == ("xy", "yaw", "speed", "valid"):
         normalizarion_means = {
@@ -76,10 +77,10 @@ def normalize(data, config, split="train"):
             "target/history/mcg_input_data": np.array(
                 [-2.9633283615112305, 0.005309064872562885, -0.003220283193513751, 6.059159278869629,
                  1.9252972602844238, 4.271720886230469, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                 0.0], dtype=np.float32),
+                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32),
             "other/history/mcg_input_data": np.array(
                 [5.601348876953125, 1.4943491220474243, -0.013019951991736889, 1.44475519657135, 1.072572946548462,
-                 2.4158480167388916, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                 2.4158480167388916, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 dtype=np.float32),
             "road_network_embeddings": np.array(
                 [77.35582733154297, 0.12082172930240631, 0.05486442521214485, 0.004187341313809156,
@@ -101,11 +102,11 @@ def normalize(data, config, split="train"):
                  1.0, 1.0, 1.0], dtype=np.float32),
             "target/history/mcg_input_data": np.array(
                 [3.738459825515747, 0.11283490061759949, 0.10153655707836151, 5.553133487701416, 0.5482628345489502,
-                 1.6044323444366455, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                 1.6044323444366455, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
                 dtype=np.float32),
             "other/history/mcg_input_data": np.array(
                 [33.899658203125, 25.64937973022461, 1.3623465299606323, 3.8417460918426514, 1.0777146816253662,
-                 2.4492409229278564, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+                 2.4492409229278564, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
                 dtype=np.float32),
             "road_network_embeddings": np.array(
                 [36.71162414550781, 0.761500358581543, 0.6328969597816467, 0.7438802719116211, 0.6675100326538086,
@@ -175,6 +176,12 @@ def normalize(data, config, split="train"):
     for k in keys:
         if "test" in config and config["test"]["data_config"]["noise_config"]["exclude_road"] and "road" in k:
             continue
+
+        # if k == "target/history/mcg_input_data":
+        #     print("k = target/history/mcg_input_data !!!!!!!!!")
+        #     print("data[k] shape", data[k].shape)
+        #     print("normalizarion_means[k] shape", (normalizarion_means[k]).shape)
+        #     print("data[k] - normalizarion_means[k] shape", (data[k] - normalizarion_means[k]).shape)
         data[k] = (data[k] - normalizarion_means[k]) / (normalizarion_stds[k] + 1e-6)
         data[k].clamp_(-15, 15)
     data[f"target/history/lstm_data_diff"] *= data[f"target/history/valid_diff"]
@@ -336,10 +343,10 @@ class MultiPathPPDataset(Dataset):
         for subject in ["target", "other"]:
             agent_type_ohe = self._compute_agent_type_and_is_sdc_ohe(data, subject)  # ToDo: fix?, ohe never used
             lstm_input_data = data[f"{subject}/history/lstm_data"]
-            # I = np.eye(lstm_input_data.shape[1])[None, ...]
+            I = np.eye(lstm_input_data.shape[1])[None, ...]
             # timestamp_ohe = np.repeat(agent_type_ohe, lstm_input_data.shape[0], axis=0)
-            # timestamp_ohe = np.repeat(I, lstm_input_data.shape[0], axis=0)
-            timestamp_ohe = agent_type_ohe
+            timestamp_ohe = np.repeat(I, lstm_input_data.shape[0], axis=0)
+            # timestamp_ohe = agent_type_ohe
 
             data[f"{subject}/history/mcg_input_data"] = np.concatenate([lstm_input_data, timestamp_ohe], axis=-1)
 
