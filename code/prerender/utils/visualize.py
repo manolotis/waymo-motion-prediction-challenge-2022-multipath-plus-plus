@@ -54,7 +54,7 @@ def plot_scene(scene_data):
 
 if __name__ == "__main__":
     #testing
-    scene_data = np.load("/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/training/scid_1a1d402a74865f47__aid_2__atype_1.npz")
+    scene_data = np.load("/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation/scid_1a1733bba34ed10e__aid_588__atype_1.npz")
     # scene_data = np.load("/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/training/scid_1e9086f93af39801__aid_3816__atype_2.npz")
     print("scene_data_keys", list(scene_data.keys()))
     plot_scene(scene_data)

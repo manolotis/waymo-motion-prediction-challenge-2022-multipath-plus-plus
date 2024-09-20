@@ -5,6 +5,7 @@ import numpy as np
 from .vectorizer import MultiPathPPRenderer
 from .utils import get_config, data_to_numpy
 import argparse
+import matplotlib.pyplot as plt
 
 
 def get_renderer(renderer_name, renderer_config):
@@ -48,7 +49,8 @@ def generate_filename(scene_data):
     scenario_id = scene_data["scenario_id"]
     agent_id = scene_data["agent_id"]
     agent_type = scene_data["target/agent_type"]
-    return f"scid_{scenario_id}__aid_{agent_id}__atype_{agent_type.item()}.npz"
+    timestep = scene_data["timestep"]
+    return f"scid_{scenario_id}__aid_{agent_id}__atype_{agent_type.item()}__t_{timestep}.npz"
 
 
 def merge_and_save(renderers, data, output_path):

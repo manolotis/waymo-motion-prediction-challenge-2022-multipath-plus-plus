@@ -67,7 +67,8 @@ def generate_filename(scene_data, agent_index):
     scenario_id = scene_data["scenario_id"][agent_index]
     agent_id = scene_data["agent_id"][agent_index]
     agent_type = scene_data["target/agent_type"][agent_index]
-    return f"scid_{scenario_id}__aid_{agent_id}__atype_{int(agent_type.item())}.npz"
+    timestep = scene_data["timestep"][agent_index]
+    return f"scid_{scenario_id}__aid_{agent_id}__atype_{int(agent_type.item())}__t_{timestep}.npz"
 
 
 model_name = config["model"]["name"]
@@ -80,6 +81,9 @@ if not os.path.exists(savefolder):
     os.makedirs(savefolder, exist_ok=True)
 
 for data in tqdm(test_dataloader):
+
+
+
     # for key in data.keys():
     #     print(key, type(data[key]))
     #     try:
@@ -107,15 +111,62 @@ for data in tqdm(test_dataloader):
 
     dict_to_cuda(data)
     probs, coordinates, covariance_matrices, loss_coeff = model(data)
+
+    probs = torch.nn.functional.softmax(probs, dim=1)
+
+    # print("probs shape", probs.shape)
+    # print("coordinates shape", coordinates.shape)
+    # print("covariance_matrices shape", covariance_matrices.shape)
+
+    # Step 1: sort probs
+    index_sort = torch.argsort(probs, dim=1, descending=True)  # Sort along dimension 1
+
+    # Step 2: Sort probs
+    probs_sorted = torch.gather(probs, 1, index_sort)
+
+    # Step 3: Sort coordinates (shape: [8, 6, 80, 2])
+    # We expand index_sort to match the shape of coordinates
+    index_sort_broadcast_coords = index_sort.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, coordinates.size(2),
+                                                                                coordinates.size(3))
+    # Sort coordinates based on the indices from probs
+    coordinates_sorted = torch.gather(coordinates, 1, index_sort_broadcast_coords)
+
+    #  Step 4: Sort covariance_matrices (shape: [8, 6, 80, 2, 2])
+    # Expand index_sort for covariance_matrices
+    index_sort_broadcast_cov = index_sort.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1).expand(-1, -1, covariance_matrices.size(2), covariance_matrices.size(3), covariance_matrices.size(4))
+
+    # Sort covariance_matrices based on the indices from probs
+    covariance_matrices_sorted = torch.gather(covariance_matrices, 1, index_sort_broadcast_cov)
+
+    # print("probs_sorted shape", probs_sorted.shape)
+    # print("coordinates_sorted shape", coordinates_sorted.shape)
+    # print("covariance_matrices shape", covariance_matrices.shape)
+
+    # exit()
+    # loss_coeff = loss_coeff[index_sort]
+
+    probs = probs_sorted
+    coordinates = coordinates_sorted
+    covariance_matrices = covariance_matrices_sorted
+
     probs = probs.detach().cpu()
+
     covariance_matrices = covariance_matrices.detach().cpu()
 
     coordinates = coordinates * 10. + torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()
     coordinates = coordinates.detach().cpu()
 
     for agent_index, agent_id in enumerate(data["agent_id"]):
+        agent_id_filter = data["agent_id"][agent_index]
+
+        # if agent_id_filter != 130:
+        # # if agent_id_filter != 128 and agent_id_filter != 130:
+        #     continue # ToDo: remove
+
+
         filename = generate_filename(data, agent_index)
         savedata = {
+            "timestep": data["timestep"][agent_index],
             "scenario_id": data["scenario_id"][agent_index],
             "agent_id": data["agent_id"][agent_index],
             "agent_type": data["target/agent_type"][agent_index].flatten(),

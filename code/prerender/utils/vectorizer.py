@@ -126,30 +126,74 @@ class MultiPathPPRenderer(Renderer):
             "segments": result,
             "segment_types": np.array(segment_types)}
 
-    def _split_past_and_future(self, data, key):
-        history = np.concatenate(
-            [data[f"state/past/{key}"], data[f"state/current/{key}"]], axis=1)[..., None]
-        future = data[f"state/future/{key}"][..., None]
+    def _split_past_and_future(self, data, key, timestep):
+
+        all_data = np.concatenate(
+            [data[f"state/past/{key}"], data[f"state/current/{key}"], data[f"state/future/{key}"]], axis=1)[..., None]
+
+        history = all_data[:, timestep - 11:timestep, :]
+
+        # future must be 80 timesteps. Make sure it is.
+        n_agents, n_steps, n_features = all_data[:, timestep:, :].shape
+        filler_data = np.full((n_agents, 80, n_features), -1)
+        future = filler_data
+        future[:, :n_steps, :] = all_data[:, timestep:, :]
+
+        #
+        # history = np.concatenate(
+        #     [data[f"state/past/{key}"], data[f"state/current/{key}"]], axis=1)[..., None]
+        # future = data[f"state/future/{key}"][..., None]
         return history, future
 
-    def _prepare_agent_history(self, data):
+    def _prepare_agent_history(self, data, timestep):
         # (n_agents, 11, 2)
         preprocessed_data = {}
-        preprocessed_data["history/xy"] = np.array([
-            np.concatenate([data["state/past/x"], data["state/current/x"]], axis=1),
-            np.concatenate([data["state/past/y"], data["state/current/y"]], axis=1)
+
+        # print("shape before", all_xy.shape)
+        # print("type before", type(all_xy))
+
+        # preprocessed_data["history/xy"] = np.array([
+        #     np.concatenate([data["state/past/x"], data["state/current/x"]], axis=1),
+        #     np.concatenate([data["state/past/y"], data["state/current/y"]], axis=1)
+        # ]).transpose(1, 2, 0)
+        #
+        # # (n_agents, 80, 2)
+        # preprocessed_data["future/xy"] = np.array(
+        #     [data["state/future/x"], data["state/future/y"]]).transpose(1, 2, 0)
+        # # (n_agents, 11, 1)
+
+        # print(data["state/past/x"].shape, data["state/current/x"].shape, data["state/future/x"].shape)
+        # print()
+
+        all_xy = np.array([
+            np.concatenate([data["state/past/x"], data["state/current/x"], data["state/future/x"]], axis=1),
+            np.concatenate([data["state/past/y"], data["state/current/y"], data["state/future/y"]], axis=1),
         ]).transpose(1, 2, 0)
-        # (n_agents, 80, 2)
-        preprocessed_data["future/xy"] = np.array(
-            [data["state/future/x"], data["state/future/y"]]).transpose(1, 2, 0)
-        # (n_agents, 11, 1)
+
+        if timestep < 11:
+            raise ValueError
+        preprocessed_data["history/xy"] = all_xy[:, timestep - 11:timestep, :]
+        preprocessed_data["future/xy"] = all_xy[:, timestep:, :]
+
+        # future must be 80 timesteps. Make sure it is.
+        n_agents, n_steps, n_features = all_xy[:, timestep:, :].shape
+        filler_xy = np.full((n_agents, 80, n_features), -1.0)
+        preprocessed_data["future/xy"] = filler_xy
+        preprocessed_data["future/xy"][:, :n_steps, :] = all_xy[:, timestep:, :]
+
+        #
+        # # print("shape after", preprocessed_data["future/xy"].shape)
+        # # print("type after", type(preprocessed_data["history/xy"]))
+
         for key in ["speed", "bbox_yaw", "valid"]:
             preprocessed_data[f"history/{key}"], preprocessed_data[f"future/{key}"] = \
-                self._split_past_and_future(data, key)
+                self._split_past_and_future(data, key, timestep)
+
         for key in ["state/id", "state/is_sdc", "state/type", "state/current/width",
                     "state/current/length"]:
             preprocessed_data[key.split('/')[-1]] = data[key]
         preprocessed_data["scenario_id"] = data["scenario/id"]
+
         return preprocessed_data
 
     def _transfrom_to_agent_coordinate_system(self, coordinates, shift, yaw):
@@ -260,81 +304,90 @@ class MultiPathPPRenderer(Renderer):
         array_of_scene_data_dicts = []
         self._preprocess_data(data)
         road_network_info = self._prepare_roadnetwork_info(data)
-        agent_history_info = self._prepare_agent_history(data)
-        for i in range(agent_history_info["history/xy"].shape[0]):
-            if not self._target_agent_filter.allow(data, i):
-                continue
-            current_agent_scene_shift = agent_history_info["history/xy"][i][-1]
 
-            if self._config["noisy_heading"]:
-                agent_history_info["history/bbox_yaw"][i][-1] += np.pi / 2
+        num_steps = 80
+        current_step = 11
+        for timestep in range(current_step, current_step + num_steps):
 
-            current_agent_scene_yaw = np.copy(agent_history_info["history/bbox_yaw"][i][-1])
-            current_scene_road_network_coordinates = self._transfrom_to_agent_coordinate_system(
-                road_network_info["segments"], current_agent_scene_shift, current_agent_scene_yaw)
-            current_scene_road_network_coordinates, current_scene_road_network_types = \
-                self._filter_closest_segments(
-                    current_scene_road_network_coordinates, road_network_info["segment_types"])
-            current_scene_road_network_coordinates = self._normalize_tensor(
-                current_scene_road_network_coordinates,
-                **get_normalize_data()["road_network_segments"])
-            road_segments_embeddings = self._generate_segment_embeddings(
-                current_scene_road_network_coordinates, current_scene_road_network_types)
-            current_scene_agents_coordinates_history = self._transfrom_to_agent_coordinate_system(
-                agent_history_info["history/xy"], current_agent_scene_shift,
-                current_agent_scene_yaw)
-            current_scene_agents_coordinates_future = self._transfrom_to_agent_coordinate_system(
-                agent_history_info["future/xy"], current_agent_scene_shift, current_agent_scene_yaw)
-            current_scene_agents_yaws_history = \
-                agent_history_info["history/bbox_yaw"] - current_agent_scene_yaw
-            current_scene_agents_yaws_future = \
-                agent_history_info["future/bbox_yaw"] - current_agent_scene_yaw
-            (current_scene_target_agent_coordinates_history,
-             current_scene_other_agents_coordinates_history) = self._normalize(
-                current_scene_agents_coordinates_history, i, "xy")
-            current_scene_target_agent_yaws_history, current_scene_other_agents_yaws_history = \
-                self._normalize(current_scene_agents_yaws_history, i, "yaw")
-            current_scene_target_agent_speed_history, current_scene_other_agents_speed_history = \
-                self._normalize(agent_history_info["history/speed"], i, "speed")
+            agent_history_info = self._prepare_agent_history(data, timestep)
 
-            scene_data = {
-                "shift": current_agent_scene_shift[None,],
-                "yaw": current_agent_scene_yaw,
-                "scenario_id": agent_history_info["scenario_id"].item().decode("utf-8"),
-                "agent_id": int(agent_history_info["id"][i]),
-                "target/agent_type": np.array([int(agent_history_info["type"][i])]).reshape(1),
-                "other/agent_type": np.delete(agent_history_info["type"], i, axis=0).astype(int),
-                "target/is_sdc": np.array(int(agent_history_info["is_sdc"][i])).reshape(1),
-                "other/is_sdc": np.delete(agent_history_info["is_sdc"], i, axis=0).astype(int),
+            for i in range(agent_history_info["history/xy"].shape[0]):
+                if not self._target_agent_filter.allow(data, i):
+                    continue
+                current_agent_scene_shift = agent_history_info["history/xy"][i][-1]
 
-                "target/width": agent_history_info["width"][i].item(),
-                "target/length": agent_history_info["length"][i].item(),
-                "other/width": np.delete(agent_history_info["width"], i),
-                "other/length": np.delete(agent_history_info["length"], i),
+                if self._config["noisy_heading"]:
+                    agent_history_info["history/bbox_yaw"][i][-1] += np.pi / 2
 
-                "target/future/xy": current_scene_agents_coordinates_future[i][None,],
-                "target/future/yaw": current_scene_agents_yaws_future[i][None,],
-                "target/future/speed": agent_history_info["future/speed"][i][None,],
-                "target/future/valid": agent_history_info["future/valid"][i][None,],
-                "target/history/xy": current_scene_target_agent_coordinates_history,
-                "target/history/yaw": current_scene_target_agent_yaws_history,
-                "target/history/speed": current_scene_target_agent_speed_history,
-                "target/history/valid": agent_history_info["history/valid"][i][None,],
+                current_agent_scene_yaw = np.copy(agent_history_info["history/bbox_yaw"][i][-1])
+                current_scene_road_network_coordinates = self._transfrom_to_agent_coordinate_system(
+                    road_network_info["segments"], current_agent_scene_shift, current_agent_scene_yaw)
+                current_scene_road_network_coordinates, current_scene_road_network_types = \
+                    self._filter_closest_segments(
+                        current_scene_road_network_coordinates, road_network_info["segment_types"])
+                current_scene_road_network_coordinates = self._normalize_tensor(
+                    current_scene_road_network_coordinates,
+                    **get_normalize_data()["road_network_segments"])
+                road_segments_embeddings = self._generate_segment_embeddings(
+                    current_scene_road_network_coordinates, current_scene_road_network_types)
+                current_scene_agents_coordinates_history = self._transfrom_to_agent_coordinate_system(
+                    agent_history_info["history/xy"], current_agent_scene_shift,
+                    current_agent_scene_yaw)
+                current_scene_agents_coordinates_future = self._transfrom_to_agent_coordinate_system(
+                    agent_history_info["future/xy"], current_agent_scene_shift, current_agent_scene_yaw)
+                current_scene_agents_yaws_history = \
+                    agent_history_info["history/bbox_yaw"] - current_agent_scene_yaw
+                current_scene_agents_yaws_future = \
+                    agent_history_info["future/bbox_yaw"] - current_agent_scene_yaw
+                (current_scene_target_agent_coordinates_history,
+                 current_scene_other_agents_coordinates_history) = self._normalize(
+                    current_scene_agents_coordinates_history, i, "xy")
+                current_scene_target_agent_yaws_history, current_scene_other_agents_yaws_history = \
+                    self._normalize(current_scene_agents_yaws_history, i, "yaw")
+                current_scene_target_agent_speed_history, current_scene_other_agents_speed_history = \
+                    self._normalize(agent_history_info["history/speed"], i, "speed")
 
-                "other/future/xy": np.delete(current_scene_agents_coordinates_future, i, axis=0),
-                "other/future/yaw": np.delete(current_scene_agents_yaws_future, i, axis=0),
-                "other/future/speed": np.delete(agent_history_info["future/speed"], i, axis=0),
-                "other/future/valid": np.delete(agent_history_info["future/valid"], i, axis=0),
-                "other/history/xy": current_scene_other_agents_coordinates_history,
-                "other/history/yaw": current_scene_other_agents_yaws_history,
-                "other/history/speed": current_scene_other_agents_speed_history,
-                "other/history/valid": np.delete(agent_history_info["history/valid"], i, axis=0),
+                scene_data = {
+                    "shift": current_agent_scene_shift[None,],
+                    "yaw": current_agent_scene_yaw,
+                    "scenario_id": agent_history_info["scenario_id"].item().decode("utf-8"),
+                    "agent_id": int(agent_history_info["id"][i]),
+                    "target/agent_type": np.array([int(agent_history_info["type"][i])]).reshape(1),
+                    "other/agent_type": np.delete(agent_history_info["type"], i, axis=0).astype(int),
+                    "target/is_sdc": np.array(int(agent_history_info["is_sdc"][i])).reshape(1),
+                    "other/is_sdc": np.delete(agent_history_info["is_sdc"], i, axis=0).astype(int),
 
-                "road_network_embeddings": road_segments_embeddings,
-                "road_network_segments": current_scene_road_network_coordinates
-            }
-            scene_data["trajectory_bucket"] = self._get_trajectory_class(scene_data)
-            if self._config["noisy_heading"]:
-                scene_data["yaw_original"] = current_agent_scene_yaw - np.pi / 2
-            array_of_scene_data_dicts.append(scene_data)
+                    "target/width": agent_history_info["width"][i].item(),
+                    "target/length": agent_history_info["length"][i].item(),
+                    "other/width": np.delete(agent_history_info["width"], i),
+                    "other/length": np.delete(agent_history_info["length"], i),
+
+                    "target/future/xy": current_scene_agents_coordinates_future[i][None,],
+                    "target/future/yaw": current_scene_agents_yaws_future[i][None,],
+                    "target/future/speed": agent_history_info["future/speed"][i][None,],
+                    "target/future/valid": agent_history_info["future/valid"][i][None,],
+                    "target/history/xy": current_scene_target_agent_coordinates_history,
+                    "target/history/yaw": current_scene_target_agent_yaws_history,
+                    "target/history/speed": current_scene_target_agent_speed_history,
+                    "target/history/valid": agent_history_info["history/valid"][i][None,],
+
+                    "other/future/xy": np.delete(current_scene_agents_coordinates_future, i, axis=0),
+                    "other/future/yaw": np.delete(current_scene_agents_yaws_future, i, axis=0),
+                    "other/future/speed": np.delete(agent_history_info["future/speed"], i, axis=0),
+                    "other/future/valid": np.delete(agent_history_info["future/valid"], i, axis=0),
+                    "other/history/xy": current_scene_other_agents_coordinates_history,
+                    "other/history/yaw": current_scene_other_agents_yaws_history,
+                    "other/history/speed": current_scene_other_agents_speed_history,
+                    "other/history/valid": np.delete(agent_history_info["history/valid"], i, axis=0),
+
+                    "road_network_embeddings": road_segments_embeddings,
+                    "road_network_segments": current_scene_road_network_coordinates,
+                    "timestep": timestep
+
+                }
+
+                scene_data["trajectory_bucket"] = self._get_trajectory_class(scene_data)
+                if self._config["noisy_heading"]:
+                    scene_data["yaw_original"] = current_agent_scene_yaw - np.pi / 2
+                array_of_scene_data_dicts.append(scene_data)
         return array_of_scene_data_dicts

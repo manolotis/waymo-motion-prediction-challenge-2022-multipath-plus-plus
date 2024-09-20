@@ -13,13 +13,18 @@ def main():
     renderers = get_renderers(config["renderers"])
 
     if config["multiprocessing"]:
-
         p = multiprocessing.Pool(args.n_jobs)
         processes = []
         k = 0
         for data in tqdm(dataset.as_numpy_iterator()):
             k += 1
             data = tf.io.parse_single_example(data, generate_features_description())
+
+            scenario_id = tf.get_static_value(data['scenario/id'][0]).decode()
+            agent_id = tf.get_static_value(data['state/id'])
+            # if scenario_id != "182e61c9e21f1194": # quick filtering. ToDO: remove 128  130
+            #     continue
+
             processes.append(
                 p.apply_async(
                     merge_and_save,
