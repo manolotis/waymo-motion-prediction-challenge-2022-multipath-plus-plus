@@ -382,6 +382,7 @@ class MultiPathPPRenderer(Renderer):
 
                     "road_network_embeddings": road_segments_embeddings,
                     "road_network_segments": current_scene_road_network_coordinates,
+                    "road_network_segments_types": current_scene_road_network_types,
                     "timestep": timestep
 
                 }

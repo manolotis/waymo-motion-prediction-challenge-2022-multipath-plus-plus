@@ -29,3 +29,6 @@ predictions
 evaluations
 evaluations_per_example
 evaluations_per_example_all
+viz/
+predictions/
+data/
