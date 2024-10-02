@@ -58,6 +58,10 @@ def merge_and_save(renderers, data, output_path):
         os.makedirs(output_path, exist_ok=True)
     data_to_numpy(data)
     preprocessed_dicts = [renderer.render(data) for renderer in renderers]
+
+    if preprocessed_dicts[0] is None:
+        return
+
     for scene_number in range(len(preprocessed_dicts[0])):
         scene_data = {}
         for renderer_number in range(len(preprocessed_dicts)):

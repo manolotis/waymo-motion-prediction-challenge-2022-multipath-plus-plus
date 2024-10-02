@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
+from matplotlib import pyplot as plt
+
 from .utils import (
     filter_valid, get_filter_valid_roadnetwork_keys, get_filter_valid_anget_history,
     get_normalize_data)
@@ -84,6 +86,22 @@ class MultiPathPPRenderer(Renderer):
             data["state/future/valid"].sum(axis=-1) + data["state/past/valid"].sum(axis=-1)
 
     def _preprocess_data(self, data):
+
+        # node_type = data["roadgraph_samples/type"]
+        #
+        # # Keep only lane centers and broken/solid single white lines
+        # # values_to_keep = [1, 2, 3, 6, 7]
+        #
+        # # Keep only lane centers
+        # values_to_keep = [1, 2, 3]
+        #
+        # nodes_to_keep = node_type == 1
+        # for v in values_to_keep[1:]:
+        #     nodes_to_keep = nodes_to_keep | (node_type == v)
+        #
+        # nodes_to_keep = nodes_to_keep.flatten()
+        # data["roadgraph_samples/valid"][~nodes_to_keep] = 0
+
         valid_roadnetwork_selector = data["roadgraph_samples/valid"]
         for key in get_filter_valid_roadnetwork_keys():
             data[key] = filter_valid(data[key], valid_roadnetwork_selector)
@@ -303,7 +321,11 @@ class MultiPathPPRenderer(Renderer):
     def render(self, data):
         array_of_scene_data_dicts = []
         self._preprocess_data(data)
-        road_network_info = self._prepare_roadnetwork_info(data)
+
+        try:
+            road_network_info = self._prepare_roadnetwork_info(data)
+        except ValueError:
+            return None
 
         num_steps = 80
         current_step = 11
@@ -347,20 +369,63 @@ class MultiPathPPRenderer(Renderer):
                 current_scene_target_agent_speed_history, current_scene_other_agents_speed_history = \
                     self._normalize(agent_history_info["history/speed"], i, "speed")
 
+                other_agent_type = np.delete(agent_history_info["type"], i, axis=0).astype(int)
+                other_is_sdc = np.delete(agent_history_info["is_sdc"], i, axis=0).astype(int)
+                other_width = np.delete(agent_history_info["width"], i)
+                other_length = np.delete(agent_history_info["length"], i)
+                other_future_xy = np.delete(current_scene_agents_coordinates_future, i, axis=0)
+                other_future_yaw = np.delete(current_scene_agents_yaws_future, i, axis=0)
+                other_future_speed = np.delete(agent_history_info["future/speed"], i, axis=0)
+                other_future_valid = np.delete(agent_history_info["future/valid"], i, axis=0)
+                other_history_xy = current_scene_other_agents_coordinates_history
+                other_history_yaw = current_scene_other_agents_yaws_history
+                other_history_speed = current_scene_other_agents_speed_history
+                other_history_valid = np.delete(agent_history_info["history/valid"], i, axis=0)
+
+                ###################
+                # To remove information of others
+                # print("other_agent_type.shape", other_agent_type.shape)
+                # print("other_is_sdc.shape", other_is_sdc.shape)
+                # print("other_width.shape", other_width.shape)
+                # print("other_length.shape", other_length.shape)
+                # print("other_future_xy.shape", other_future_xy.shape)
+                # print("other_future_yaw.shape", other_future_yaw.shape)
+                # print("other_future_speed.shape", other_future_speed.shape)
+                # print("other_future_valid.shape", other_future_valid.shape)
+                # print("other_history_xy.shape", other_history_xy.shape)
+                # print("other_history_yaw.shape", other_history_yaw.shape)
+                # print("other_history_speed.shape", other_history_speed.shape)
+                # print("other_history_valid.shape", other_history_valid.shape)
+
+                # other_agent_type[:] = -1
+                # other_is_sdc[:] = -1
+                # other_width[:] = -1
+                # other_length[:] = -1
+                # other_future_xy[:, :, :] = -1
+                # other_future_yaw[:, :, :] = -1
+                # other_future_speed[:, :, :] = -1
+                # other_future_valid[:, :, :] = 0
+                # other_history_xy[:, :, :] = -1
+                # other_history_yaw[:, :, :] = -1
+                # other_history_speed[:, :, :] = -1
+                # other_history_valid[:, :, :] = 0
+
+                # exit()
+
+                ###################
+
+
+
                 scene_data = {
                     "shift": current_agent_scene_shift[None,],
                     "yaw": current_agent_scene_yaw,
                     "scenario_id": agent_history_info["scenario_id"].item().decode("utf-8"),
                     "agent_id": int(agent_history_info["id"][i]),
                     "target/agent_type": np.array([int(agent_history_info["type"][i])]).reshape(1),
-                    "other/agent_type": np.delete(agent_history_info["type"], i, axis=0).astype(int),
-                    "target/is_sdc": np.array(int(agent_history_info["is_sdc"][i])).reshape(1),
-                    "other/is_sdc": np.delete(agent_history_info["is_sdc"], i, axis=0).astype(int),
 
+                    "target/is_sdc": np.array(int(agent_history_info["is_sdc"][i])).reshape(1),
                     "target/width": agent_history_info["width"][i].item(),
                     "target/length": agent_history_info["length"][i].item(),
-                    "other/width": np.delete(agent_history_info["width"], i),
-                    "other/length": np.delete(agent_history_info["length"], i),
 
                     "target/future/xy": current_scene_agents_coordinates_future[i][None,],
                     "target/future/yaw": current_scene_agents_yaws_future[i][None,],
@@ -371,14 +436,18 @@ class MultiPathPPRenderer(Renderer):
                     "target/history/speed": current_scene_target_agent_speed_history,
                     "target/history/valid": agent_history_info["history/valid"][i][None,],
 
-                    "other/future/xy": np.delete(current_scene_agents_coordinates_future, i, axis=0),
-                    "other/future/yaw": np.delete(current_scene_agents_yaws_future, i, axis=0),
-                    "other/future/speed": np.delete(agent_history_info["future/speed"], i, axis=0),
-                    "other/future/valid": np.delete(agent_history_info["future/valid"], i, axis=0),
-                    "other/history/xy": current_scene_other_agents_coordinates_history,
-                    "other/history/yaw": current_scene_other_agents_yaws_history,
-                    "other/history/speed": current_scene_other_agents_speed_history,
-                    "other/history/valid": np.delete(agent_history_info["history/valid"], i, axis=0),
+                    "other/agent_type": other_agent_type,
+                    "other/is_sdc": other_is_sdc,
+                    "other/width": other_width,
+                    "other/length": other_length,
+                    "other/future/xy": other_future_xy,
+                    "other/future/yaw": other_future_yaw,
+                    "other/future/speed": other_future_speed,
+                    "other/future/valid": other_future_valid,
+                    "other/history/xy": other_history_xy,
+                    "other/history/yaw": other_history_yaw,
+                    "other/history/speed": other_history_speed,
+                    "other/history/valid": other_history_valid,
 
                     "road_network_embeddings": road_segments_embeddings,
                     "road_network_segments": current_scene_road_network_coordinates,
