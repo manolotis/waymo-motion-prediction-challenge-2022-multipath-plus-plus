@@ -34,6 +34,10 @@ mode2paths = {
     }
 }
 
+predictions_path = mode2paths[MODE]["predictions_path"]
+data_path = mode2paths[MODE]["data_path"]
+savefolder = mode2paths[MODE]["savefolder"]
+
 MAX = 100000000000000
 
 
