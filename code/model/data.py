@@ -211,12 +211,23 @@ def dict_to_cuda(d):
 
 
 class MultiPathPPDataset(Dataset):
-    def __init__(self, config, noise_config=None):
+    def __init__(self, config, noise_config=None, files_to_keep=None):
         self._data_path = config["data_path"]
         self._config = config
         self._noise_config = noise_config
         self._training = noise_config["training"]
-        files = os.listdir(self._data_path)
+        if files_to_keep is not None:
+            files = []
+            all_files = os.listdir(self._data_path)
+            for file in all_files:
+
+                for f in files_to_keep:
+                    sid, aid, t = f
+                    if sid in file:
+                        files.append(file)
+                        break
+        else:
+            files = os.listdir(self._data_path)
         self._files = [os.path.join(self._data_path, f) for f in files]
 
         print("Len files before adding noisy: ", len(self._files))
@@ -449,8 +460,8 @@ class MultiPathPPDataset(Dataset):
         return result_dict
 
 
-def get_dataloader(config):
-    dataset = MultiPathPPDataset(config["dataset_config"], config["noise_config"])
+def get_dataloader(config, files_to_keep=None):
+    dataset = MultiPathPPDataset(config["dataset_config"], config["noise_config"], files_to_keep=files_to_keep)
     dataloader = DataLoader(
         dataset, collate_fn=MultiPathPPDataset.collate_fn, **config["dataloader_config"])
     return dataloader

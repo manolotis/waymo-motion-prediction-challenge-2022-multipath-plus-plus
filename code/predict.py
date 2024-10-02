@@ -10,6 +10,7 @@ import random
 from utils.predict_utils import parse_arguments, get_config
 import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 seed = 0
 torch.manual_seed(seed)
@@ -110,7 +111,12 @@ for data in tqdm(test_dataloader):
     #         print("\t", data[key])
 
     dict_to_cuda(data)
-    probs, coordinates, covariance_matrices, loss_coeff = model(data)
+    try:
+        probs, coordinates, covariance_matrices, loss_coeff = model(data)
+    except RuntimeError as e:
+        print("There was a runtime error. Skipping... ")
+        raise e
+        continue
 
     probs = torch.nn.functional.softmax(probs, dim=1)
 
@@ -174,12 +180,57 @@ for data in tqdm(test_dataloader):
             "probabilities": probs[agent_index],
             "target/history/xy": data_original["target/history/xy"][agent_index],
             "other/history/xy": data_original["other/history/xy"][agent_index],
-            "target/future/xy": data_original["target/future/xy"][agent_index],
-            "other/future/xy": data_original["other/future/xy"][agent_index],
             "target/history/valid": data_original["target/history/valid"][agent_index],
             "other/history/valid": data_original["other/history/valid"][agent_index],
-            "target/future/valid": data_original["target/future/valid"][agent_index],
-            "other/future/valid": data_original["other/future/valid"][agent_index],
             "covariance_matrix": covariance_matrices[agent_index]
         }
+
+        if "target/future/xy" in data_original:
+            savedata["target/future/xy"] = data_original["target/future/xy"][agent_index]
+            savedata["other/future/xy"] = data_original["other/future/xy"][agent_index]
+            savedata["target/future/valid"] = data_original["target/future/valid"][agent_index]
+            savedata["other/future/valid"] = data_original["other/future/valid"][agent_index]
+
+
+        # # print("segments shape", data["road_network_segments"].shape)
+        # # print("segments embeddings", data["road_network_embeddings"].shape)
+        # # # print("segments types", data["road_network_segments_types"].shape)
+        # # print("coordinates", coordinates.shape)
+        # # print("data original taget history xy", data_original["target/history/xy"].shape)
+        # segments = data["road_network_segments"].cpu()
+        # embeddings = data["road_network_embeddings"].cpu()
+        # # print(segments.shape)
+        # # print(embeddings[:, 0, -20:].shape)
+        # segment_types = np.argmax(embeddings[:, 0, -20:], axis=1)  # assuming you have n-by-m arr
+        #
+        # plt.scatter(segments[:, 0, 0], segments[:, 0, 1], color="black", s=0.3)
+        #
+        # future = (data["target/future/xy"][agent_index].squeeze()).cpu()
+        # history = (data["target/history/xy"][agent_index].squeeze()).cpu()
+        # # history_other = data["other/history/xy"].squeeze()
+        #
+        # valid_future = (data["target/future/valid"][agent_index].squeeze() > 0).cpu()
+        # valid_history = (data["target/history/valid"][agent_index].squeeze() > 0).cpu()
+        #
+        # # print("future", future.shape)
+        # # print("history", history.shape)
+        # #
+        # # print("valid_future", valid_future.shape)
+        # # print("valid_history", valid_history.shape)
+        # #
+        # # plt.scatter(history[valid_history, 0], history[valid_history, 1], label="history", s=6, alpha=0.5)
+        # # plt.scatter(future[valid_future, 0], future[valid_future, 1], label="history", s=6, alpha=0.5)
+        # #
+        # # num_modes, num_timesteps, num_features = coordinates[agent_index].shape
+        # # for i in range(num_modes):
+        # #     plt.scatter(coordinates[agent_index][i, :, 0], coordinates[agent_index][i, :, 1], s=6)
+        # #
+        # # plt.xlabel("x [m]")
+        # # plt.ylabel("y [m]")
+        # # plt.tight_layout()
+        # #
+        # # # plt.show()
+        # #
+        # # exit()
+
         np.savez_compressed(os.path.join(savefolder, filename), **savedata)
