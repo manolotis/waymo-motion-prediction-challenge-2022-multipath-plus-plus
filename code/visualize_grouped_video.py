@@ -1,20 +1,40 @@
 # Makes a video/gif out of several images
-
 import cv2
 import os
-import pdb
 
 
 def sortNumber(val):
-    val = val.replace(".png","").split("_")[-1]
+    val = val.replace(".png", "").split("_")[-1]
 
     return val
 
 
-# Specify the directory containing your PNG images
-image_folder = '/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img/'
-video_folder = '/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/mp4/'
-gif_folder = '/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/gif/'
+# MODE = "standard"
+# MODE = "simplified_rg"
+# MODE = "simplified_rg_no_others"
+MODE = "carla"
+
+mode2paths = {
+    "standard": {
+        "image_folder": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img/",
+        "video_folder": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/mp4/",
+    },
+    "simplified_rg": {
+        "image_folder": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img_simplified_rg/",
+        "video_folder": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/mp4_simplified_rg/",
+    },
+    "simplified_rg_no_others": {
+        "image_folder": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img_simplified_rg_no_others/",
+        "video_folder": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/mp4_simplified_rg_no_others/",
+    },
+    # "carla": {
+    #     "image_folder": "",
+    #     "video_folder": "",
+    # }
+}
+
+image_folder = mode2paths[MODE]["image_folder"]
+video_folder = mode2paths[MODE]["video_folder"]
 
 # Get a list of image filenames in the folder, sorted by filename
 images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
@@ -39,17 +59,14 @@ for k, images in mapping.items():
 
     # Define the codec and create a VideoWriter object
     video = cv2.VideoWriter(video_folder + k + '.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 10, (width, height))
-    # gif = cv2.VideoWriter(video_folder + k + '.gif', cv2.VideoWriter_fourcc(*'gif'), 10, (width, height))
 
     # Loop through all images and write them to the video
     for image in images:
         img_path = os.path.join(image_folder, image)
         frame = cv2.imread(img_path)
         video.write(frame)  # Add the frame to the video
-        # gif.write(frame)  # Add the frame to the video
 
     # Release the VideoWriter object
     video.release()
-    # gif.release()
 
     print("Video created successfully!", k)

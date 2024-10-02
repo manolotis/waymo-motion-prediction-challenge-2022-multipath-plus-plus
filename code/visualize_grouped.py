@@ -10,14 +10,47 @@ from utils.general_utils import load_predictions_and_group
 from tqdm import tqdm
 import multiprocessing
 
-evaluations_path = "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/evals/"
+# MODE = "standard"
+# MODE = "simplified_rg"
+# MODE = "simplified_rg_no_others"
+MODE = "carla"
 
-evaluation_files = sorted([os.path.join(evaluations_path, file) for file in os.listdir(evaluations_path)])
-evals = [np.load(file) for file in evaluation_files]
-file2eval = {}
-for f, e in zip(evaluation_files, evals):
-    file2eval[f] = e
-n_evals = len(evals)
+mode2paths = {
+    "standard": {
+        "evaluations_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/evals/",
+        "predictions_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions/final_RoP_Cov_Single__18c3cff/",
+        "data_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation/",
+        "save_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img",
+    },
+    "simplified_rg": {
+        "evaluations_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/evals_simplified_rg/",
+        "predictions_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions_simplified_rg/final_RoP_Cov_Single__18c3cff/",
+        "data_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation_simplified_rg/",
+        "save_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img_simplified_rg",
+    },
+    "simplified_rg_no_others": {
+        "evaluations_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/evals_simplified_rg_no_others/",
+        "predictions_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions_simplified_rg_no_others/final_RoP_Cov_Single__18c3cff/",
+        "data_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation_simplified_rg_no_others/",
+        "save_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img_simplified_rg_no_others",
+    },
+    "carla": {
+        "evaluations_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/evals_carla/",
+        "predictions_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions_carla/final_RoP_Cov_Single__18c3cff/",
+        "data_path": "/home/manolotis/sandbox/c4r/data/last/",
+        "save_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img_carla",
+    }
+}
+
+# Used to filter the predictions that will be visualized
+visualized_nonsimplified_path = "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img"
+imgs_nonsimplified = set(
+    ["__".join(f.replace(".png", "").split("__")[:-1]) for f in os.listdir(visualized_nonsimplified_path)])
+
+evaluations_path = mode2paths[MODE]['evaluations_path']
+predictions_path = mode2paths[MODE]['predictions_path']
+data_path = mode2paths[MODE]['data_path']
+save_path = mode2paths[MODE]['save_path']
 
 MEAN_TOP1_RANK_SWITCHES = 9
 MEAN_TOP1_RANK_SWITCHES_COUNTER = 6.5
@@ -27,6 +60,32 @@ MULTIPLIER = 2
 MEAN_TOP1_RANK_SWITCHES_THRESHOLD = MULTIPLIER * MEAN_TOP1_RANK_SWITCHES
 MEAN_TOP1_RANK_SWITCHES_COUNTER_THRESHOLD = MULTIPLIER * MEAN_TOP1_RANK_SWITCHES_COUNTER
 MEAN_TOP1_ADE_MEAN_THRESHOLD = MULTIPLIER * MEAN_TOP1_ADE_MEAN
+
+evaluation_files = sorted([os.path.join(evaluations_path, file) for file in os.listdir(evaluations_path)])
+
+evals = [np.load(file) for file in evaluation_files]
+file2eval = {}
+for f, e in zip(evaluation_files, evals):
+    file2eval[f] = e
+n_evals = len(evals)
+
+
+def get_files_to_visualize_from_nonsimplified_rg(file2eval):
+    files_to_visualize = []
+
+    for file, eval in file2eval.items():
+        filename = "__".join(file.replace(".npz", "").split("/")[-1].split("__")[:-1])
+
+        if "carla" not in evaluations_path:
+            if filename not in imgs_nonsimplified:
+                continue
+
+        # If not in list of already visualized
+        #     continue
+        print(file)
+        files_to_visualize.append(file)
+
+    return files_to_visualize
 
 
 def get_files_to_visualize(file2eval):
@@ -42,11 +101,8 @@ def get_files_to_visualize(file2eval):
     return files_to_visualize
 
 
-files_to_visualize = get_files_to_visualize(file2eval)
-
-predictions_path = "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions/final_RoP_Cov_Single__18c3cff/"
-data_path = "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation/"
-
+# files_to_visualize = get_files_to_visualize(file2eval)
+files_to_visualize = get_files_to_visualize_from_nonsimplified_rg(file2eval)
 
 scenes_agents_to_visualize_strings = []
 
@@ -58,11 +114,10 @@ for f in files_to_visualize:
     print(scid, aid, atype, t)
     # print(f"{scid}__{aid}")
 
-
 #####################################################
 prediction_files = sorted([os.path.join(predictions_path, file) for file in os.listdir(predictions_path)])
 predictions = []
-limits = {} # min-max limits to visualize for (scene_id, agent_id) combinations
+limits = {}  # min-max limits to visualize for (scene_id, agent_id) combinations
 
 for file in prediction_files:
     f = file.split("/")[-1].replace(".npz", "")
@@ -87,7 +142,6 @@ for file in prediction_files:
     history = pred["target/history/xy"].squeeze()
     valid_future = pred["target/future/valid"].squeeze() > 0
     valid_history = pred["target/history/valid"].squeeze() > 0
-
 
     all_x = np.concatenate([
         pred["coordinates"][..., 0].flatten(),
@@ -114,7 +168,6 @@ for file in prediction_files:
             "y": [9999999999, -9999999999],
         }
 
-
     limits[scid_aid_key]["x"][0] = min(min_x, limits[scid_aid_key]["x"][0])
     limits[scid_aid_key]["x"][1] = max(max_x, limits[scid_aid_key]["x"][1])
     limits[scid_aid_key]["y"][0] = min(min_y, limits[scid_aid_key]["y"][0])
@@ -128,7 +181,7 @@ def process_and_plot_grouped_prediction(prediction):
     segments = scene_data["road_network_segments"]
     embeddings = scene_data["road_network_embeddings"]
     # print(segments.shape)
-    segment_types = np.argmax(embeddings[:,0,-20:], axis=1) # assuming you have n-by-m arr
+    segment_types = np.argmax(embeddings[:, 0, -20:], axis=1)  # assuming you have n-by-m arr
 
     is_laneCenterFreeway = segment_types == 1
     is_laneCenterSurface = segment_types == 2
@@ -140,11 +193,10 @@ def process_and_plot_grouped_prediction(prediction):
     # is_solidSingleWhite = segment_types == 7
     # is_solidDoubleYellow = segment_types == 12
     is_laneBoundary = (segment_types >= 6) & (segment_types <= 13)
-
     is_roadEdgeBoundary = segment_types == 15
     is_roadEdgeMedian = segment_types == 16
     is_roadEdge = is_roadEdgeBoundary | is_roadEdgeMedian
-    is_other = segment_types >= 17 # stop sign, crosswalk, speedbump
+    is_other = segment_types >= 17  # stop sign, crosswalk, speedbump
 
     # print("segments", segments.shape)
     # print("types", segment_types.shape)
@@ -172,10 +224,16 @@ def process_and_plot_grouped_prediction(prediction):
     valid_future = prediction["target/future/valid"].squeeze() > 0
     valid_history = prediction["target/history/valid"].squeeze() > 0
 
-
     plt.scatter(history[valid_history, 0], history[valid_history, 1], label="history", alpha=0.5)
     plt.scatter(future[valid_future, 0], future[valid_future, 1], label="future", alpha=0.5)
 
+    # "other/history/xy": current_scene_other_agents_coordinates_history
+
+    history_other = scene_data["other/history/xy"].squeeze()
+    for other_idx in range(history_other.shape[0]):
+        hist = history_other[other_idx]
+        hist_valid = scene_data["other/history/valid"][other_idx].squeeze() > 0
+        plt.scatter(hist[hist_valid, 0], hist[hist_valid, 1], alpha=1, color="black", marker="s")
 
     for i, mode in enumerate(prediction["coordinates"]):
         a = 0.7 if i == 0 else 0.2
@@ -206,7 +264,7 @@ def process_and_plot_grouped_prediction(prediction):
     plt.legend(loc="upper right")
     plt.tight_layout()
 
-    plt.savefig(os.path.join("/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/viz/img", savename))
+    plt.savefig(os.path.join(save_path, savename))
     # plt.show()
     plt.close()
     # exit()
@@ -214,9 +272,6 @@ def process_and_plot_grouped_prediction(prediction):
 
 for prediction in tqdm(predictions):
     process_and_plot_grouped_prediction(prediction)
-
-
-
 
 # Multiprocessing is not much faster than single process...
 # p = multiprocessing.Pool(12)
@@ -234,8 +289,6 @@ for prediction in tqdm(predictions):
 #
 # for r in tqdm(processes):
 #     r.get()
-
-
 
 
 """
