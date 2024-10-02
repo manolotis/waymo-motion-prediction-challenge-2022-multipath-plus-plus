@@ -1,12 +1,39 @@
 from multipathPP.code.utils.general_utils import get_grouped_scene_filename
-from utils.general_utils import get_scene_filename, generate_filename, load_scene_data, get_grouped_scene_filename, load_predictions_and_group
+from utils.general_utils import get_scene_filename, generate_filename, load_scene_data, get_grouped_scene_filename, \
+    load_predictions_and_group
 from scipy.optimize import linear_sum_assignment
 import numpy as np
 import os
 from tqdm import tqdm
 
-predictions_path = "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions/final_RoP_Cov_Single__18c3cff/"
-data_path = "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation/"
+# MODE = "standard"
+# MODE = "simplified_rg"
+# MODE = "simplified_rg_no_others"
+MODE = "carla"
+
+mode2paths = {
+    "standard": {
+        "predictions_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions/final_RoP_Cov_Single__18c3cff/",
+        "data_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation/",
+        "savefolder": "../evals/",
+    },
+    "simplified_rg": {
+        "predictions_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions_simplified_rg/final_RoP_Cov_Single__18c3cff/",
+        "data_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation_simplified_rg/",
+        "savefolder": "../evals_simplified_rg/",
+    },
+    "simplified_rg_no_others": {
+        "predictions_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions_simplified_rg_no_others/final_RoP_Cov_Single__18c3cff/",
+        "data_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/data/prerendered/validation_simplified_rg_no_others/",
+        "savefolder": "../evals_simplified_rg_no_others/",
+    },
+    "carla": {
+        "predictions_path": "/home/manolotis/sandbox/temporal-consistency-tests/multipathPP/predictions_carla/final_RoP_Cov_Single__18c3cff/",
+        "data_path": "/home/manolotis/sandbox/c4r/data/last/",
+        "savefolder": "../evals_carla/",
+    }
+}
+
 MAX = 100000000000000
 
 
@@ -46,9 +73,6 @@ def get_trajectory_matching(pred1, pred2):
     # E.g. pred1 are the predictions made at time t, and pred2 at time t+1. We match the predicted trajectories from the
     # predictions made at 2 subsequent timesteps.
     pass
-
-
-
 
 
 def get_ade_between_trajectories(traj1, traj2):
@@ -98,9 +122,7 @@ def get_fde_matrix(coords1, coords2):
             traj1 = coords1[i]
             traj2 = coords2[j]
             # ToDo: Get only the fde between overlapping timesteps
-
             fde = get_fde_between_trajectories(traj1, traj2)
-
             m[i, j] = fde
 
     return m
@@ -109,8 +131,6 @@ def get_fde_matrix(coords1, coords2):
 def run():
     print("Getting grouped predictions...")
     grouped_predictions, scene_agent_type_map = load_predictions_and_group(predictions_path, MAX)
-
-    # print("grouped predictions", grouped_predictions)
 
     for scene_id, scene_predictions in grouped_predictions.items():
         for agent_id, agent_predictions in scene_predictions.items():
@@ -130,21 +150,20 @@ def run():
                 t_prev = t - 1
                 t_curr = t
 
-                # try:
-
-                pred_prev = agent_predictions[t_prev]
-                coords_prev = agent_predictions[t_prev]['coordinates']  # shape (6, 80, 2)
-                probs_prev = agent_predictions[t_prev]['probabilities']  # shape (6,)
-
-                pred_curr = agent_predictions[t_curr]
+                try:
+                    pred_prev = agent_predictions[t_prev]
+                    coords_prev = agent_predictions[t_prev]['coordinates']  # shape (6, 80, 2)
+                    probs_prev = agent_predictions[t_prev]['probabilities']  # shape (6,)
+                    pred_curr = agent_predictions[t_curr]
+                except KeyError:
+                    print("[!] Key error", t_curr, scene_id, agent_id)
+                    continue
                 coords_curr = agent_predictions[t_curr]['coordinates']  # shape (6, 80, 2)
                 probs_curr = agent_predictions[t_curr]['probabilities']  # shape (6,)
 
                 # except KeyError:
                 #     print("Keyerror: ", scene_id, agent_id, t, "continuing")
                 #     continue
-
-
 
                 ade_matrix = get_ade_matrix(coords_prev, coords_curr)
                 fde_matrix = get_fde_matrix(coords_prev, coords_curr)
@@ -192,10 +211,10 @@ def run():
             # print("All ADEs of top1 rank switches", top1_rank_switches_ades)
             # print("Avg ADE of top1 rank switches", top1_rank_switches_ade_sum / top1_rank_switches_counter)
 
-
             # toDo: make K
-            if top1_rank_switches_counter == 0:
-                continue
+            # if top1_rank_switches_counter == 0:
+            #     print("skipping")
+            #     continue
 
             eval = {
                 'rank_switches_counter': rank_switches_counter,
@@ -206,13 +225,9 @@ def run():
                 'top1_rank_switches_counter': top1_rank_switches_counter,
             }
 
-
-
-
             agent_type = scene_agent_type_map[(scene_id, agent_id)]
-            filename = get_grouped_scene_filename(scene_id,agent_id,agent_type, min_timestep, max_timestep)
+            filename = get_grouped_scene_filename(scene_id, agent_id, agent_type, min_timestep, max_timestep)
 
-            savefolder = "../evals/"
             savepath = os.path.join(savefolder, filename)
             # print(savepath)
 
