@@ -1,0 +1,19 @@
+data_path: "/home/manolotis/sandbox/waymoMotion/data/reduced/tf_example/training/"
+output_path: "/home/manolotis/sandbox/robustness_benchmark/multipathPP/data/prerendered/training"
+n_jobs: 8
+n_shards: 1
+shard_id: 0
+multiprocessing: True
+renderers:
+  - renderer_name: MultiPathPPRenderer
+    renderer_config:
+      normalize: False
+      segment_filtering:
+        policy: "within_radius"
+        segments_filtering_radius: 150
+      agent_filtering:
+        policy: "interesting"
+      drop_segments: 1
+      noisy_heading : False
+
+

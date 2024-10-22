@@ -24,8 +24,8 @@ test:
 
 model:
 #  name: "final_RoP_Cov_Single_lr4e-4__65c803f"
-  name: "final_RoP_Cov_Single__0f1746cCARLA"
-  path: "/home/manolotis/sandbox/scenario_based_evaluation/multipathPP/trained_models/"
+  name: "final_RoP_Cov_Single__0f1746cCARLsdA"
+  path: "/home/manolotis/sandbox/multipathpp/code/trained_models"
   n_trajectories: 6
   size: 640
   make_em: False
