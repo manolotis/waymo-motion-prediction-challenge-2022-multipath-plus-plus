@@ -18,6 +18,12 @@ def parse_arguments():
     parser.add_argument("--config", type=str, required=True, help="Config file path")
     # ToDo: make all config parameters overridable from command line. Remember to update get_config method
 
+
+    # extra params for model re-training with carla data
+    parser.add_argument("--remove", action="store_true", help="Remove files that are not to be kept?")
+    parser.add_argument("--max-count", type=int, default=2147483648, help="Max files to be kept for each heading range")
+
+
     args = parser.parse_args()
     return args
 
