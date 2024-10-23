@@ -162,17 +162,17 @@ def normalize(data, config, split="train"):
                 [5.49907656e-01, 8.18156648e-04, -5.30252398e-04, 1.34358371e-02, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 dtype=np.float32),
             "other/history/lstm_data": np.array(
-                [-8.97448769 - 5.85277245, 0.03265645, 2.58377134, 2.0228201, 4.79801353, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                [-8.97448769, -5.85277245, 0.03265645, 2.58377134, 2.0228201, 4.79801353, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                  0.0], dtype=np.float32),
             "other/history/lstm_data_diff": np.array(
                 [0.02261338, -0.01122897, -0.0004728, -0.00029936, 0.0, 0.0,
                  0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32),
             "target/history/mcg_input_data": np.array(
-                [-2.76957152e+00 - 2.51914882e-03, 2.38127539e-03, 5.54519826e+00, 1.85323735e+00, 4.27251198e+00, 0.0,
+                [-2.76957152e+00, -2.51914882e-03, 2.38127539e-03, 5.54519826e+00, 1.85323735e+00, 4.27251198e+00, 0.0,
                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float32),
             "other/history/mcg_input_data": np.array(
-                [-8.97448769 - 5.85277245, 0.03265645, 2.58377134, 2.0228201, 4.79801353, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                [-8.97448769, -5.85277245, 0.03265645, 2.58377134, 2.0228201, 4.79801353, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                 dtype=np.float32),
             "road_network_embeddings": np.array(
@@ -321,6 +321,7 @@ def normalize(data, config, split="train"):
         if "test" in config and config["test"]["data_config"]["noise_config"]["exclude_road"] and "road" in k:
             continue
 
+        # print(k, data[k].shape, normalizarion_means[k].shape, normalizarion_stds[k].shape)
         # if k == "target/history/mcg_input_data":
         #     print("k = target/history/mcg_input_data !!!!!!!!!")
         #     print("data[k] shape", data[k].shape)
