@@ -19,6 +19,8 @@ def parse_arguments():
     parser.add_argument("--config", type=str, required=True, help="Config file path")
     # ToDo: make all config parameters overridable from command line. Remember to update get_config method
 
+    parser.add_argument("--empty-losses", action="store_true", help="Empties the lossess of the previously train model")
+
     args = parser.parse_args()
     return args
 

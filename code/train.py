@@ -23,6 +23,15 @@ random.seed(seed)
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 
+# Waymo Values
+# MEAN_X = 1.4715e+01
+# MEAN_Y = 4.3008e-03
+# STD_XY = 10.
+
+# CARLA Behavior Agent values (in Town05)
+MEAN_X = 20.424562
+MEAN_Y = 0.0039684023
+STD_XY = (20.241842 + 14.278944) / 2.0
 
 def get_last_file(path):
     list_of_files = glob.glob(f'{path}/*')
@@ -30,6 +39,13 @@ def get_last_file(path):
         return None
     latest_file = max(list_of_files, key=os.path.getctime)
     return latest_file
+
+def get_best_checkpoint(path):
+    list_of_files = glob.glob(f'{path}/*')
+    for f in list_of_files:
+        if "best" in f and "old" not in f:
+            return f
+    return None
 
 
 def get_git_revision_short_hash():
@@ -50,7 +66,8 @@ except Exception as e:
     print("Could not make path")
     raise e
 
-last_checkpoint_path = get_last_file(models_path)
+# last_checkpoint_path = get_last_file(models_path)
+best_checkpoint_path = get_best_checkpoint(models_path)
 
 dataloader = get_dataloader(config["train"]["data_config"])
 val_dataloader = get_dataloader(config["val"]["data_config"])
@@ -61,19 +78,26 @@ if config["train"]["scheduler"]:
     scheduler = ReduceLROnPlateau(optimizer, patience=20, factor=0.5, verbose=True)
 
 last_epoch = 0
-if last_checkpoint_path is not None:
-    last_checkpoint = torch.load(last_checkpoint_path)
-    model.load_state_dict(last_checkpoint["model_state_dict"])
-    optimizer.load_state_dict(last_checkpoint["optimizer_state_dict"])
-    num_steps = last_checkpoint["num_steps"]
-    last_epoch = last_checkpoint["epoch"]
-    train_losses = last_checkpoint["train_losses"]
-    val_losses = last_checkpoint["val_losses"]
+# if last_checkpoint_path is not None:
+if best_checkpoint_path is not None:
+    best_checkpoint = torch.load(best_checkpoint_path)
+    model.load_state_dict(best_checkpoint["model_state_dict"])
+    # optimizer.load_state_dict(last_checkpoint["optimizer_state_dict"])
+    # num_steps = last_checkpoint["num_steps"]
+    # last_epoch = last_checkpoint["epoch"]
+    # train_losses = last_checkpoint["train_losses"]
+    # val_losses = last_checkpoint["val_losses"]
 
-    if config["train"]["scheduler"]:
-        scheduler.load_state_dict(last_checkpoint["scheduler_state_dict"])
+    # if config["train"]["scheduler"]:
+    #     scheduler.load_state_dict(last_checkpoint["scheduler_state_dict"])
 
-    print("LOADED ", last_checkpoint_path)
+    num_steps = 0
+    train_losses = []
+    val_losses = []
+
+
+    # print("LOADED ", last_checkpoint_path)
+    print("LOADED ", best_checkpoint_path)
     print("Epoch: ", last_epoch)
     print("num_steps: ", num_steps)
     print("len(train_losses): ", len(train_losses))
@@ -83,6 +107,7 @@ else:
     num_steps = 0
     train_losses = []
     val_losses = []
+    print("Training from scratch")
 
 this_num_steps = 0
 model_parameters = filter(lambda p: p.requires_grad, model.parameters())
@@ -107,7 +132,7 @@ for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
         assert torch.isfinite(covariance_matrices).all()
         xy_future_gt = data["target/future/xy"]
         if config["train"]["normalize_output"]:
-            xy_future_gt = (data["target/future/xy"] - torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()) / 10.
+            xy_future_gt = (data["target/future/xy"] - torch.Tensor([MEAN_X, MEAN_Y]).cuda()) / STD_XY
             assert torch.isfinite(xy_future_gt).all()
         loss = nll_with_covariances(
             xy_future_gt, coordinates, probas, data["target/future/valid"].squeeze(-1),
@@ -119,7 +144,7 @@ for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
         optimizer.step()
 
         # if config["train"]["normalize_output"]:
-        #     _coordinates = coordinates.detach() * 10. + torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()
+        #     _coordinates = coordinates.detach() * STD_XY + torch.Tensor([MEAN_X, MEAN_Y]).cuda()
         # else:
         #     _coordinates = coordinates.detach()
         if num_steps % 10 == 0:
@@ -143,7 +168,8 @@ for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
             if config["train"]["scheduler"]:
                 saving_data["scheduler_state_dict"] = scheduler.state_dict()
             torch.save(saving_data, os.path.join(models_path, f"last.pth"))
-            torch.save(saving_data, os.path.join(models_path, f"e{epoch}_it{num_steps}.pth"))
+            if this_num_steps % 15 == 0:
+                torch.save(saving_data, os.path.join(models_path, f"e{epoch}_it{num_steps}.pth"))
         # if num_steps % config["train"]["validate_every_n_steps"] == 0 and this_num_steps > 0:
 
         num_steps += 1
@@ -171,10 +197,10 @@ for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
             probas, coordinates, covariance_matrices, loss_coeff = model(data, num_steps)
 
             # if config["train"]["normalize_output"]:
-            #     coordinates = coordinates * 10. + torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()
+            #     coordinates = coordinates * STD_XY + torch.Tensor([MEAN_X, MEAN_Y]).cuda()
 
             if config["train"]["normalize_output"]:
-                xy_future_gt = (data["target/future/xy"] - torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()) / 10.
+                xy_future_gt = (data["target/future/xy"] - torch.Tensor([MEAN_X, MEAN_Y]).cuda()) / STD_XY
                 assert torch.isfinite(xy_future_gt).all()
 
             loss = nll_with_covariances(

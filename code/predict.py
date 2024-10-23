@@ -1,5 +1,6 @@
 import copy
 import torch
+from requests.packages import target
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 from model.multipathpp import MultiPathPP
@@ -10,6 +11,7 @@ import random
 from utils.predict_utils import parse_arguments, get_config
 import numpy as np
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 seed = 0
 torch.manual_seed(seed)
@@ -23,9 +25,21 @@ torch.backends.cudnn.deterministic = True
 args = parse_arguments()
 config = get_config(args)
 
+# Waymo Values
+# MEAN_X = 1.4715e+01
+# MEAN_Y = 4.3008e-03
+# STD_XY = 10.
+
+# CARLA Behavior Agent values (in Town05)
+MEAN_X = 20.424562
+MEAN_Y = 0.0039684023
+STD_XY = (20.241842 + 14.278944) / 2.0
+
 
 def get_last_checkpoint(path):
+    print("Looking for last checkpoint in ", path)
     list_of_files = glob.glob(f'{path}/*')
+    print("List of files: ", list_of_files)
     if len(list_of_files) == 0:
         return None
     latest_file = max(list_of_files, key=os.path.getctime)
@@ -33,13 +47,15 @@ def get_last_checkpoint(path):
 
 
 def get_best_checkpoint(path):
+    print("Looking for best checkpoint in ", path)
     list_of_files = glob.glob(f'{path}/*')
+    print("List of files: ", list_of_files)
     for f in list_of_files:
-        if "best" in f:
+        if "best" in f and "old" not in f:
             return f
     return None
-
-
+# /home/manolotis/sandbox/multipathpp/code/trained_models/final_RoP_Cov_Single__aa8678f__from_trained
+# /home/manolotis/sandbox/multipathpp/code/trained_models/final_RoP_Cov_Single__aa8678f_from_trained
 try:
     models_path = os.path.join(config["model"]["path"], config["model"]["name"])
     # checkpoint_path = get_last_checkpoint(models_path)
@@ -110,7 +126,8 @@ for data in tqdm(test_dataloader):
     probs = probs.detach().cpu()
     covariance_matrices = covariance_matrices.detach().cpu()
 
-    coordinates = coordinates * 10. + torch.Tensor([1.4715e+01, 4.3008e-03]).cuda()
+    coordinates = coordinates * STD_XY + torch.Tensor([MEAN_X, MEAN_Y]).cuda()
+    # ToDo: use new normalization values
     coordinates = coordinates.detach().cpu()
 
     for agent_index, agent_id in enumerate(data["agent_id"]):
@@ -131,4 +148,50 @@ for data in tqdm(test_dataloader):
             "other/future/valid": data_original["other/future/valid"][agent_index],
             "covariance_matrix": covariance_matrices[agent_index]
         }
+        #
+        # if agent_index < 3:
+        #     segments = data_original["road_network_segments"]
+        #
+        #     plt.scatter(segments[:, 0, 0], segments[:, 0, 1], color="black", s=0.1)
+        #
+        #     future = savedata["target/future/xy"].squeeze()
+        #     history = savedata["target/history/xy"].squeeze()
+        #
+        #     print("target history", history)
+        #
+        #     valid_future = savedata["target/future/valid"].squeeze() > 0
+        #     valid_history = savedata["target/history/valid"].squeeze() > 0
+        #
+        #     plt.scatter(history[valid_history, 0], history[valid_history, 1], alpha=1)
+        #     plt.scatter(future[valid_future, 0], future[valid_future, 1], alpha=1, s=16)
+        #
+        #     all_x = np.concatenate([
+        #         savedata["coordinates"][..., 0].flatten(),
+        #         history[valid_history, 0],
+        #         future[valid_future, 0]]
+        #     )
+        #
+        #     all_y = np.concatenate([
+        #         savedata["coordinates"][..., 1].flatten(),
+        #         history[valid_history, 1],
+        #         future[valid_future, 1]]
+        #     )
+        #
+        #     for i, mode in enumerate(savedata["coordinates"]):
+        #         plt.scatter(mode[:, 0], mode[:, 1], label=f"p={savedata['probabilities'][i]:.3f}", s=15,
+        #                     alpha=0.3)
+        #
+        #     plt.scatter(history[valid_history, 0], history[valid_history, 1], label="history", c="blue", s=20, alpha=1)
+        #     plt.scatter(future[valid_future, 0], future[valid_future, 1], label="future", c="orange", s=5, alpha=1)
+        #
+        #     padding = 20
+        #     xlim = (all_x.min() - padding, all_x.max() + padding)
+        #     ylim = (all_y.min() - padding, all_y.max() + padding)
+        #
+        #     plt.xlim(xlim)
+        #     plt.ylim(ylim)
+        #     plt.legend()
+        #     plt.tight_layout()
+        #     plt.show()
+
         np.savez_compressed(os.path.join(savefolder, filename), **savedata)

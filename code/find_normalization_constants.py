@@ -148,17 +148,17 @@ for data in tqdm(dataloader):
 
         # should_continue = "target" in ""
         if key == "target/history/xy" or key == "target/future/xy":
-            # if key == "target/history/xy" :
-            all_target_x.extend(value[:, :, 0].flatten())
-            all_target_y.extend(value[:, :, 1].flatten())
+
+            # all_target_x.extend(value[:, :, 0].flatten())
+            # all_target_y.extend(value[:, :, 1].flatten())
 
             if "future" in key:
                 future_target_x.extend(value[:, :, 0].flatten())
                 future_target_y.extend(value[:, :, 1].flatten())
 
-        if key == "target/history/speed" or key == "target/future/speed":
+        # if key == "target/history/speed" or key == "target/future/speed":
             # if key == "target/history/speed":
-            all_target_speed.extend(value[:, :, 0].flatten())
+            # all_target_speed.extend(value[:, :, 0].flatten())
 
         if key == "target/history/lstm_data":
             all_target_lstm_data.extend(value[:, :, :6].tolist())
@@ -186,11 +186,11 @@ for data in tqdm(dataloader):
         break
 
 variables = {
-    "all_target_x": all_target_x,
-    "all_target_y": all_target_y,
+    # "all_target_x": all_target_x,
+    # "all_target_y": all_target_y,
     "future_target_x": future_target_x,
     "future_target_y": future_target_y,
-    "all_target_speed": all_target_speed,
+    # "all_target_speed": all_target_speed,
 
 }
 
@@ -199,6 +199,8 @@ for k, v in variables.items():
     print(f"\tshape", np.array(v).shape)
     print(f"\tmean", np.array(v).mean())
     print(f"\tstd", np.array(v).std())
+
+del variables
 
 variables_to_aggregate = {
     "all_target_lstm_data": np.array(all_target_lstm_data),
@@ -216,7 +218,7 @@ for k, v in variables_to_aggregate.items():
     print(f"\tmean", v.mean(axis=(0, 1)))
     print(f"\tstd", v.std(axis=(0, 1)))
 
-print('np array of all_target_lstm_data shape', np.array(all_target_lstm_data).shape)
+# print('np array of all_target_lstm_data shape', np.array(all_target_lstm_data).shape)
 
 #
 # plt.scatter(all_target_x, all_target_y, c=all_target_speed, cmap='coolwarm', s=1, alpha=0.3, vmin=0, vmax=24)
