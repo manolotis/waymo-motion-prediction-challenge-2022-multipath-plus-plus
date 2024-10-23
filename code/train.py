@@ -24,14 +24,14 @@ torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 
 # Waymo Values
-# MEAN_X = 1.4715e+01
-# MEAN_Y = 4.3008e-03
-# STD_XY = 10.
+MEAN_X = 1.4715e+01
+MEAN_Y = 4.3008e-03
+STD_XY = 10.
 
 # CARLA Behavior Agent values (in Town05)
-MEAN_X = 20.424562
-MEAN_Y = 0.0039684023
-STD_XY = (20.241842 + 14.278944) / 2.0
+# MEAN_X = 20.424562
+# MEAN_Y = 0.0039684023
+# STD_XY = (20.241842 + 14.278944) / 2.0
 
 def get_last_file(path):
     list_of_files = glob.glob(f'{path}/*')
@@ -143,10 +143,6 @@ for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
             torch.nn.utils.clip_grad_norm_(model.parameters(), config["train"]["clip_grad_norm"])
         optimizer.step()
 
-        # if config["train"]["normalize_output"]:
-        #     _coordinates = coordinates.detach() * STD_XY + torch.Tensor([MEAN_X, MEAN_Y]).cuda()
-        # else:
-        #     _coordinates = coordinates.detach()
         if num_steps % 10 == 0:
             pbar.set_description(
                 f"epoch = {epoch} | "
@@ -195,9 +191,6 @@ for epoch in tqdm(range(last_epoch, config["train"]["n_epochs"])):
             dict_to_cuda(data)
             # probas, coordinates, _, _ = model(data, num_steps)
             probas, coordinates, covariance_matrices, loss_coeff = model(data, num_steps)
-
-            # if config["train"]["normalize_output"]:
-            #     coordinates = coordinates * STD_XY + torch.Tensor([MEAN_X, MEAN_Y]).cuda()
 
             if config["train"]["normalize_output"]:
                 xy_future_gt = (data["target/future/xy"] - torch.Tensor([MEAN_X, MEAN_Y]).cuda()) / STD_XY
