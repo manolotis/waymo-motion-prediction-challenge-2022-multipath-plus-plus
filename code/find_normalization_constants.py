@@ -1,17 +1,14 @@
-import copy
-import torch
-from requests.packages import target
 
+import torch
 torch.multiprocessing.set_sharing_strategy('file_system')
-from model.multipathpp import MultiPathPP
-from model.data import get_dataloader, dict_to_cuda, normalize
+from model.data import get_dataloader
 import os
-import glob
+
 import random
 from utils.predict_utils import parse_arguments, get_config
 import numpy as np
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+
 
 seed = 0
 torch.manual_seed(seed)
